@@ -6,13 +6,17 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
+
+	log "github.com/sirupsen/logrus"
 )
 
+// QuickSearch queries the /quick-search planet API endpoint.
 func QuickSearch(ctx context.Context, req *Request) (*Response, error) {
 	j, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
 	}
+	log.Debugf("Making API request %q", string(j))
 
 	v := make(url.Values)
 	v.Add("_sort", "acquired desc")

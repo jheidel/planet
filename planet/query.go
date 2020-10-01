@@ -3,11 +3,14 @@ package planet
 import (
 	"time"
 
+	"github.com/paulmach/orb"
 	"github.com/paulmach/orb/geojson"
-	"github.com/paulmach/orb/maptile"
 )
 
-func RequestTileOnDate(tile maptile.Tile, d time.Time) *Request {
+// TODO request tiles for satellite pass
+// TODO request individual tile
+
+func RequestRegionOnDate(bound orb.Bound, d time.Time) *Request {
 	return &Request{
 		Filter: &AndFilter{
 			Type: "AndFilter",
@@ -23,7 +26,7 @@ func RequestTileOnDate(tile maptile.Tile, d time.Time) *Request {
 				&GeoFilter{
 					Type:      "GeometryFilter",
 					FieldName: "geometry",
-					Config:    geojson.NewGeometry(tile.Bound().ToPolygon()),
+					Config:    geojson.NewGeometry(bound.ToPolygon()),
 				},
 			},
 		},
