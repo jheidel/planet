@@ -11,9 +11,12 @@ import (
 	"planet-server/tilecache"
 	"planet-server/util"
 	"strconv"
+	"strings"
 	"time"
 
+	"github.com/eidolon/wordwrap"
 	"github.com/gorilla/mux"
+	"github.com/llgcode/draw2d/draw2dimg"
 	"github.com/paulmach/orb"
 	"github.com/paulmach/orb/clip"
 	"github.com/paulmach/orb/maptile"
@@ -72,7 +75,7 @@ func dateFromRequest(v string) (time.Time, error) {
 
 func blankImage() *image.RGBA {
 	return image.NewRGBA(image.Rectangle{
-		Min: image.Point{X: 0, Y: 0},
+		Min: image.ZP,
 		Max: image.Point{X: TileSize, Y: TileSize},
 	})
 }
@@ -80,16 +83,41 @@ func blankImage() *image.RGBA {
 func writeErrorTile(w http.ResponseWriter, err error) {
 	img := blankImage()
 
-	col := color.RGBA{255, 0, 0, 255}
-	point := fixed.Point26_6{fixed.Int26_6(0 * 64), fixed.Int26_6(256 / 2 * 64)}
+	gc := draw2dimg.NewGraphicContext(img)
 
-	d := &font.Drawer{
-		Dst:  img,
-		Src:  image.NewUniform(col),
-		Face: basicfont.Face7x13,
-		Dot:  point,
+	gc.Save()
+	gc.SetStrokeColor(color.RGBA{255, 255, 0, 255})
+	gc.SetFillColor(color.RGBA{0, 0, 0, 0})
+	gc.SetLineWidth(1)
+
+	gc.MoveTo(0, 0)
+	gc.LineTo(0, 255)
+	gc.LineTo(255, 255)
+	gc.LineTo(255, 0)
+	gc.LineTo(0, 0)
+	gc.Close()
+
+	gc.FillStroke()
+	gc.Restore()
+
+	padding := 5
+
+	col := color.RGBA{255, 0, 0, 255}
+	wrapper := wordwrap.Wrapper((256-(2*padding))/7, false)
+	lines := strings.Split(wrapper(err.Error()), "\n")
+
+	p := 7 + padding
+	for _, line := range lines {
+		point := fixed.Point26_6{fixed.Int26_6(padding * 64), fixed.Int26_6(p * 64)}
+		p += 14
+		d := &font.Drawer{
+			Dst:  img,
+			Src:  image.NewUniform(col),
+			Face: basicfont.Face7x13,
+			Dot:  point,
+		}
+		d.DrawString(string(line))
 	}
-	d.DrawString(err.Error())
 
 	w.Header().Set("Content-Type", "image/png")
 	if err := png.Encode(w, img); err != nil {
