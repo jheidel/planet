@@ -121,7 +121,7 @@ func writeErrorTile(w http.ResponseWriter, err error) {
 
 	w.Header().Set("Content-Type", "image/png")
 	if err := png.Encode(w, img); err != nil {
-		log.Fatal(err)
+		log.Errorf("failed to encode png: %v", err)
 	}
 }
 
@@ -175,7 +175,7 @@ func (s *TileServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		g := f.Geometry.Geometry()
 		p, ok := g.(orb.Polygon)
 		if !ok {
-			log.Fatal("not poylgon")
+			log.Fatal("not polygon")
 		}
 
 		intersect := clip.Polygon(tile.Bound(), p.Clone())
@@ -204,6 +204,6 @@ func (s *TileServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "image/png")
 	if err := png.Encode(w, out); err != nil {
-		log.Fatal(err)
+		log.Errorf("png encode failed: %v", err)
 	}
 }

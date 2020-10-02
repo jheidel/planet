@@ -3,9 +3,35 @@ runtime: go114
 instance_class: F2
 
 handlers:
-- url: /.*
-  secure: always
+- url: /api/.*
   script: auto
+
+- url: /node_modules
+  static_dir: web/build/es6-bundled/node_modules
+  secure: always
+
+- url: /images
+  static_dir: web/build/es6-bundled/images
+  secure: always
+
+- url: /src
+  static_dir: web/build/es6-bundled/src
+  secure: always
+
+- url: /manifest.json
+  static_files: web/build/es6-bundled/manifest.json
+  upload: web/build/es6-bundled/manifest.json
+  secure: always
+
+- url: /service-worker.js
+  static_files: web/build/es6-bundled/service-worker.js
+  upload: web/build/es6-bundled/service-worker.js
+  secure: always
+
+- url: /.*
+  static_files: web/build/es6-bundled/index.html
+  upload: web/build/es6-bundled/index.html
+  secure: always
 
 automatic_scaling:
   min_idle_instances: 0

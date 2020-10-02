@@ -20,7 +20,7 @@ var (
 
 // QuickSearch queries the /quick-search planet API endpoint.
 func QuickSearch(pctx context.Context, req *Request) (*Response, error) {
-	ctx, cancel := context.WithDeadline(pctx, time.Now().Add(10*time.Second))
+	ctx, cancel := context.WithDeadline(pctx, time.Now().Add(15*time.Second))
 	defer cancel()
 
 	if err := MaxConcurrent.Acquire(ctx, 1); err != nil {

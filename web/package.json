@@ -1,0 +1,31 @@
+{
+  "name": "planet-frontend",
+  "version": "4.0.0",
+  "description": "A web frontend for Planet data",
+  "author": "Jeff Heidel",
+  "repository": "github.com/jheidel/planet-server/web",
+  "scripts": {
+    "start": "polymer serve --hostname 0.0.0.0 --proxy-target http://localhost:8080/api --proxy-path api",
+    "build": "polymer build",
+    "lint": "polymer lint"
+  },
+  "dependencies": {
+    "@polymer/app-layout": "^3.0.0-pre.15",
+    "@polymer/iron-flex-layout": "^3.0.0-pre.15",
+    "@polymer/iron-iconset-svg": "^3.0.0-pre.15",
+    "@polymer/iron-media-query": "^3.0.0-pre.15",
+    "@polymer/paper-button": "^3.0.1",
+    "@polymer/paper-icon-button": "^3.0.0-pre.15",
+    "@polymer/paper-input": "^3.2.1",
+    "@polymer/paper-slider": "^3.0.1",
+    "@polymer/polymer": "^3.0.0",
+    "@webcomponents/webcomponentsjs": "^2.0.0",
+    "leaflet": "^1.7.1"
+  },
+  "devDependencies": {
+    "polymer-cli": "^1.7.1"
+  },
+  "engines": {
+    "node": ">=8.0"
+  }
+}
