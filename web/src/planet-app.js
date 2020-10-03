@@ -153,7 +153,7 @@ class PlanetApp extends PolymerElement {
 
       </style>
 
-      <iron-ajax id="search" handle-as="json" on-response="handleSearch_" url="/api/search" loading="{{loading_}}"></iron-ajax>
+      <iron-ajax id="search" handle-as="json" on-response="handleSearch_" url="/api/search" params="[[params_]]" auto="[[params_]]" debounce-duration="300" loading="{{loading_}}"></iron-ajax>
 
       <app-drawer-layout fullbleed="" force-narrow="[[forceNarrow_]]">
         <app-drawer id="drawer" slot="drawer" swipe-open="">
@@ -261,6 +261,10 @@ class PlanetApp extends PolymerElement {
         type: Object,
       },
 
+      params_: {
+        type: Object,
+      },
+
       search: {
         type: Object,
       },
@@ -335,13 +339,12 @@ class PlanetApp extends PolymerElement {
 
     const center = this.bounds.getCenter();
 
-    this.$.search.params = {
+    this.params_ = {
       'lat': center.lat,
       'lng': center.lng,
       'z': this.zoom,
       'group_by': 'date',
     };
-    this.$.search.generateRequest();
   }
 
   connectedCallback() {
