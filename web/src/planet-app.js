@@ -175,6 +175,11 @@ class PlanetApp extends PolymerElement {
         .icon-container > iron-icon {
           padding-right: 5px;
         }
+
+        .share {
+          padding: 10px;
+          font-size: small;
+        }
       </style>
 
       <iron-ajax id="search" handle-as="json" on-response="handleSearch_" on-error="handleSearchError_" url="/api/search" params="[[params_]]" auto="[[params_]]" debounce-duration="300" loading="{{loading_}}"></iron-ajax>
@@ -187,6 +192,14 @@ class PlanetApp extends PolymerElement {
           </app-header>
           <div id="sidebar">
             <div id="sidebar-top">
+              <div class="share">
+                <b>Please Share with Care</b>
+                <div>
+                  This site is a hobby project. Excessive usage leads to high server costs which will lead to lockdowns.
+                  All data presented is owned by <a href="https://www.planet.com/terms-of-use/" target="_blank">&copy; Planet Labs</a>.
+                  Please report any issues on <a href="https://github.com/jheidel/planet-server/issues" target="_blank">GitHub</a>.
+                </div>
+              </div>
 
               <div class="currently-showing" hidden="[[!tileUrl_]]">
                 <div>
@@ -241,7 +254,7 @@ class PlanetApp extends PolymerElement {
                   <div class="error-message">[[errorMessage]]</div>
                   <div hidden$="[[!isApiKeyError]]">
                     <p>
-                    <div>It looks like we need a new Planet API key! You can help!</div>
+                    <div>It looks like we need a new API key! You can help!</div>
                     <ol>
                       <li>
                         Go to <a href="https://www.planet.com/login/" target="_blank">https://www.planet.com</a>.
