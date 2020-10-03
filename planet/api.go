@@ -9,20 +9,14 @@ import (
 	"net/url"
 	"time"
 
-	"golang.org/x/sync/semaphore"
-
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/sync/semaphore"
 )
 
 var (
 	// Simple way to do client-side rate limiting. This is needed to stay under
 	// planet quota.
 	MaxConcurrent = semaphore.NewWeighted(3)
-)
-
-var (
-	// TODO move this to some more reasonable state.
-	client = retryablehttp.NewClient()
 )
 
 // QuickSearch queries the /quick-search planet API endpoint.
@@ -51,13 +45,9 @@ func QuickSearch(pctx context.Context, req *Request) (*Response, error) {
 	r.Header.Set("Content-Type", "application/json")
 	r.SetBasicAuth(ApiKey, "")
 
-	client.Logger = nil
-	if log.GetLevel() >= log.DebugLevel {
-		client.Logger = log.StandardLogger()
-	}
-	res, err := client.Do(r.WithContext(ctx))
-	if err != nil {
-		return nil, err
+	res, err := planetClient().Do(r.WithContext(ctx))
+	if res == nil {
+		return nil, fmt.Errorf("http: %v", err)
 	}
 	defer res.Body.Close()
 	if res.StatusCode != 200 {

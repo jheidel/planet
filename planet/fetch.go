@@ -31,13 +31,9 @@ func fetchTile(ctx context.Context, ID string, t maptile.Tile) (image.Image, err
 	if err != nil {
 		return nil, err
 	}
-	client.Logger = nil
-	if log.GetLevel() >= log.DebugLevel {
-		client.Logger = log.StandardLogger()
-	}
-	res, err := client.Do(req.WithContext(ctx))
-	if err != nil {
-		return nil, err
+	res, err := planetClient().Do(req.WithContext(ctx))
+	if res == nil {
+		return nil, fmt.Errorf("http: %v", err)
 	}
 	defer res.Body.Close()
 	if res.StatusCode != 200 {
