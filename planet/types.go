@@ -7,8 +7,6 @@ import (
 )
 
 const (
-	// TODO move config
-	ApiKey      = "aeb8e20145d34c9497cf351f6de0595e-bad"
 	ProductType = "PSScene4Band"
 )
 

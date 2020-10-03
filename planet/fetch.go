@@ -21,17 +21,17 @@ const (
 	TileSize = 256
 )
 
-func fetchTile(ctx context.Context, ID string, t maptile.Tile) (image.Image, error) {
+func (p *Client) fetchTile(ctx context.Context, ID string, t maptile.Tile) (image.Image, error) {
 	// TODO: domain selection could be improved to use some actual load balancing
 	// or fallback mechanism.
-	url := fmt.Sprintf("https://tiles%d.planet.com/data/v1/%s/%s/%d/%d/%d.png?api_key=%s", rand.Intn(4), ProductType, ID, t.Z, t.X, t.Y, ApiKey)
+	url := fmt.Sprintf("https://tiles%d.planet.com/data/v1/%s/%s/%d/%d/%d.png?api_key=%s", rand.Intn(4), ProductType, ID, t.Z, t.X, t.Y, p.GetAPIKey(ctx))
 
 	log.Debugf("Fetching tile %q", ID)
 	req, err := retryablehttp.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
-	res, err := planetClient().Do(req.WithContext(ctx))
+	res, err := planetHTTP().Do(req.WithContext(ctx))
 	if res == nil {
 		return nil, fmt.Errorf("http: %v", err)
 	}
@@ -58,7 +58,7 @@ func blankImage() image.Image {
 }
 
 // FetchTiles downloads tiles from the planet tile server to cover the provided tile. All the IDs provided are unioned.
-func FetchTiles(pctx context.Context, IDs []string, t maptile.Tile) (image.Image, error) {
+func (p *Client) FetchTiles(pctx context.Context, IDs []string, t maptile.Tile) (image.Image, error) {
 	if len(IDs) == 0 {
 		return blankImage(), nil
 	}
@@ -75,7 +75,7 @@ func FetchTiles(pctx context.Context, IDs []string, t maptile.Tile) (image.Image
 		wg.Add(1)
 		go func(id string) {
 			defer wg.Done()
-			img, err := fetchTile(ctx, id, t)
+			img, err := p.fetchTile(ctx, id, t)
 			l.Lock()
 			defer l.Unlock()
 			if err != nil && gerr == nil {
@@ -113,18 +113,18 @@ func FetchTiles(pctx context.Context, IDs []string, t maptile.Tile) (image.Image
 	return out, nil
 }
 
-func FetchThumb(pctx context.Context, ID string, w io.Writer) error {
+func (p *Client) FetchThumb(pctx context.Context, ID string, w io.Writer) error {
 	ctx, cancel := context.WithDeadline(pctx, time.Now().Add(15*time.Second))
 	defer cancel()
 
-	url := fmt.Sprintf("https://tiles%d.planet.com/data/v1/item-types/%s/items/%s/thumb?api_key=%s", rand.Intn(4), ProductType, ID, ApiKey)
+	url := fmt.Sprintf("https://tiles%d.planet.com/data/v1/item-types/%s/items/%s/thumb?api_key=%s", rand.Intn(4), ProductType, ID, p.GetAPIKey(ctx))
 
 	log.Debugf("Fetching thumb %q", ID)
 	req, err := retryablehttp.NewRequest("GET", url, nil)
 	if err != nil {
 		return err
 	}
-	res, err := planetClient().Do(req.WithContext(ctx))
+	res, err := planetHTTP().Do(req.WithContext(ctx))
 	if res == nil {
 		return fmt.Errorf("http: %v", err)
 	}

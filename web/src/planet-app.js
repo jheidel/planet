@@ -183,7 +183,7 @@ class PlanetApp extends PolymerElement {
       </style>
 
       <iron-ajax id="search" handle-as="json" on-response="handleSearch_" on-error="handleSearchError_" url="/api/search" params="[[params_]]" auto="[[params_]]" debounce-duration="300" loading="{{loading_}}"></iron-ajax>
-      <iron-ajax id="apiKeyUpdate" url="/api/key" method="POST" handle-as="text"></iron-ajax>
+      <iron-ajax id="apiKeyUpdate" url="/api/key" method="POST" handle-as="text" content-type="application/x-www-form-urlencoded"></iron-ajax>
 
       <app-drawer-layout fullbleed="" force-narrow="[[forceNarrow_]]">
         <app-drawer id="drawer" slot="drawer" swipe-open="">

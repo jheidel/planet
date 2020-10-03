@@ -9,16 +9,17 @@ import (
 )
 
 type ThumbServer struct {
+	Client *planet.Client
 }
 
-func New() *ThumbServer {
-	return &ThumbServer{}
+func New(p *planet.Client) *ThumbServer {
+	return &ThumbServer{Client: p}
 }
 
 func (s *ThumbServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ID := mux.Vars(r)["id"]
 	w.Header().Set("Content-Type", "image/png")
-	if err := planet.FetchThumb(r.Context(), ID, w); err != nil {
+	if err := s.Client.FetchThumb(r.Context(), ID, w); err != nil {
 		log.Errorf("thumb proxy failed: %v", err)
 	}
 }

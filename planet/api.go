@@ -20,7 +20,7 @@ var (
 )
 
 // QuickSearch queries the /quick-search planet API endpoint.
-func QuickSearch(pctx context.Context, req *Request) (*Response, error) {
+func (p *Client) QuickSearch(pctx context.Context, req *Request) (*Response, error) {
 	ctx, cancel := context.WithDeadline(pctx, time.Now().Add(15*time.Second))
 	defer cancel()
 
@@ -43,9 +43,9 @@ func QuickSearch(pctx context.Context, req *Request) (*Response, error) {
 	}
 
 	r.Header.Set("Content-Type", "application/json")
-	r.SetBasicAuth(ApiKey, "")
+	r.SetBasicAuth(p.GetAPIKey(ctx), "")
 
-	res, err := planetClient().Do(r.WithContext(ctx))
+	res, err := planetHTTP().Do(r.WithContext(ctx))
 	if res == nil {
 		return nil, fmt.Errorf("http: %v", err)
 	}

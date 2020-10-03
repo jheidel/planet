@@ -22,10 +22,11 @@ const (
 )
 
 type MetaServer struct {
+	Client *planet.Client
 }
 
-func New() *MetaServer {
-	return &MetaServer{}
+func New(p *planet.Client) *MetaServer {
+	return &MetaServer{Client: p}
 
 }
 
@@ -180,7 +181,7 @@ func (s *MetaServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	start := end.Add(-7 * 24 * time.Hour)
 
 	t := time.Now()
-	resp, err := planet.QuickSearch(r.Context(), planet.RequestRegion(region, start, end))
+	resp, err := s.Client.QuickSearch(r.Context(), planet.RequestRegion(region, start, end))
 	if err != nil {
 		log.Errorf("meta QuickSearch: %v", err)
 		jsonError(err, http.StatusInternalServerError)
