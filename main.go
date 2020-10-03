@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"planet-server/tileserver"
@@ -17,7 +18,7 @@ import (
 
 var (
 	port  = flag.Int("port", 8080, "Serving port")
-	debug = flag.Bool("debug", true, "Enable debug logging verbosity")
+	debug = flag.Bool("debug", false, "Enable debug logging verbosity")
 )
 
 func topLevelContext() context.Context {
@@ -46,6 +47,7 @@ func main() {
 
 	router := mux.NewRouter()
 	router.Handle("/api/tile/{z:[0-9]+}/{x:[0-9]+}/{y:[0-9]+}.png", ts).Methods("GET")
+	router.PathPrefix("/debug/pprof/").Handler(http.DefaultServeMux)
 
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", *port),

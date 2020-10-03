@@ -36,6 +36,10 @@ const (
 	TileSize = 256
 )
 
+var (
+	ErrZoom = errors.New("zoom in to view planet tiles")
+)
+
 type TileServer struct {
 	Cache *tilecache.MultiCache
 }
@@ -81,7 +85,7 @@ func blankImage() *image.RGBA {
 	})
 }
 
-func writeErrorTile(w http.ResponseWriter, err error) {
+func toErrorTile(err error) image.Image {
 	img := blankImage()
 
 	gc := draw2dimg.NewGraphicContext(img)
@@ -119,11 +123,7 @@ func writeErrorTile(w http.ResponseWriter, err error) {
 		}
 		d.DrawString(string(line))
 	}
-
-	w.Header().Set("Content-Type", "image/png")
-	if err := png.Encode(w, img); err != nil {
-		log.Errorf("failed to encode png: %v", err)
-	}
+	return img
 }
 
 func (s *TileServer) getFeatures(pctx context.Context, tile maptile.Tile, dt time.Time) ([]*planet.Feature, error) {
@@ -168,31 +168,25 @@ func (s *TileServer) getFeatures(pctx context.Context, tile maptile.Tile, dt tim
 	}
 }
 
-func (s *TileServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-
+func (s *TileServer) getTile(r *http.Request) (image.Image, error) {
 	tile, err := tileFromRequest(r)
 	if err != nil {
-		writeErrorTile(w, fmt.Errorf("invalid tile argument: %v", err.Error()))
-		return
+		return nil, err
 	}
 
 	if tile.Z < 12 {
-		writeErrorTile(w, errors.New("zoom in to load planet tiles"))
-		return
+		return nil, ErrZoom
 	}
 
 	// TODO other forms of requests, or maybe other API endpoints?
 	dt, err := dateFromRequest(r.Form.Get("date"))
 	if err != nil {
-		writeErrorTile(w, fmt.Errorf("invalid date %q: %v", r.Form["date"], err))
-		return
+		return nil, fmt.Errorf("invalid date %q: %v", r.Form["date"], err)
 	}
 
 	features, err := s.getFeatures(r.Context(), tile, dt)
 	if err != nil {
-		writeErrorTile(w, err)
-		return
+		return nil, err
 	}
 
 	// TODO visualize individual satellite passes.
@@ -233,14 +227,28 @@ func (s *TileServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	out, err := planet.FetchTiles(r.Context(), IDs, tile)
+	img, err := planet.FetchTiles(r.Context(), IDs, tile)
 	if err != nil {
-		writeErrorTile(w, fmt.Errorf("failed to fetch tiles: %v", err))
-		return
+		return nil, fmt.Errorf("failed to fetch tiles: %v", err)
 	}
 
+	return img, nil
+}
+
+func (s *TileServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
 	w.Header().Set("Content-Type", "image/png")
-	if err := png.Encode(w, out); err != nil {
-		log.Errorf("png encode failed: %v", err)
+	var img image.Image
+	img, err := s.getTile(r)
+	if err != nil {
+		if err != ErrZoom {
+			log.Errorf("serve tile error: %v", err)
+		}
+		img = toErrorTile(err)
+	}
+
+	if err := png.Encode(w, img); err != nil {
+		// These errors are expected when clients abort requests.
+		log.Debugf("png encode failed: %v", err)
 	}
 }

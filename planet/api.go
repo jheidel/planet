@@ -20,6 +20,11 @@ var (
 	MaxConcurrent = semaphore.NewWeighted(3)
 )
 
+var (
+	// TODO move this to some more reasonable state.
+	client = retryablehttp.NewClient()
+)
+
 // QuickSearch queries the /quick-search planet API endpoint.
 func QuickSearch(pctx context.Context, req *Request) (*Response, error) {
 	ctx, cancel := context.WithDeadline(pctx, time.Now().Add(15*time.Second))
@@ -46,11 +51,15 @@ func QuickSearch(pctx context.Context, req *Request) (*Response, error) {
 	r.Header.Set("Content-Type", "application/json")
 	r.SetBasicAuth(ApiKey, "")
 
-	client := retryablehttp.NewClient()
+	client.Logger = nil
+	if log.GetLevel() >= log.DebugLevel {
+		client.Logger = log.StandardLogger()
+	}
 	res, err := client.Do(r.WithContext(ctx))
 	if err != nil {
 		return nil, err
 	}
+	defer res.Body.Close()
 	if res.StatusCode != 200 {
 		buf := new(bytes.Buffer)
 		buf.ReadFrom(res.Body)
