@@ -1,6 +1,7 @@
 package tileserver
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"image"
@@ -125,6 +126,48 @@ func writeErrorTile(w http.ResponseWriter, err error) {
 	}
 }
 
+func (s *TileServer) getFeatures(pctx context.Context, tile maptile.Tile, dt time.Time) ([]*planet.Feature, error) {
+	ctx, cancel := context.WithCancel(pctx)
+	defer cancel()
+
+	cache := s.Cache.For(dt)
+
+	// Try the cache directly first.
+	features, ok := cache.Get(tile.Bound())
+	if ok {
+		return features, nil
+	}
+
+	apic := make(chan []*planet.Feature, 1)
+	errc := make(chan error, 1)
+	go func() {
+		// Request a padded region to reduce the number of API requests.
+		region := tile.Bound(BoundExpand)
+		resp, err := planet.QuickSearch(ctx, planet.RequestRegionOnDate(region, dt))
+		if err != nil {
+			errc <- err
+			return
+		}
+		cache.Put(region, resp.Features)
+		apic <- resp.Features
+	}()
+
+	watcher := cache.Watch(tile.Bound())
+	defer watcher.Close()
+
+	// Wait for either the API to return a result, or we get an equivalent result
+	// from the cache.
+	select {
+	case features := <-watcher.C:
+		log.Debugf("Resolved request from watcher")
+		return features, nil
+	case features := <-apic:
+		return features, nil
+	case err := <-errc:
+		return nil, err
+	}
+}
+
 func (s *TileServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 
@@ -146,16 +189,10 @@ func (s *TileServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	features, ok := s.Cache.For(dt).Get(tile)
-	if !ok {
-		region := tile.Bound(BoundExpand)
-		resp, err := planet.QuickSearch(r.Context(), planet.RequestRegionOnDate(region, dt))
-		if err != nil {
-			writeErrorTile(w, err)
-			return
-		}
-		features = resp.Features
-		s.Cache.For(dt).Put(region, features)
+	features, err := s.getFeatures(r.Context(), tile, dt)
+	if err != nil {
+		writeErrorTile(w, err)
+		return
 	}
 
 	// TODO visualize individual satellite passes.

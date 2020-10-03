@@ -8,11 +8,11 @@ import (
 	"image/png"
 	"io"
 	"math/rand"
-	"net/http"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/paulmach/orb/maptile"
 	log "github.com/sirupsen/logrus"
 )
@@ -22,23 +22,26 @@ const (
 )
 
 func fetchTile(ctx context.Context, ID string, t maptile.Tile) (image.Image, error) {
-	// TODO: could be improved to use some actual load balancing / or fallback mechanism.
+	// TODO: domain selection could be improved to use some actual load balancing
+	// or fallback mechanism.
 	url := fmt.Sprintf("https://tiles%d.planet.com/data/v1/%s/%s/%d/%d/%d.png?api_key=%s", rand.Intn(4), ProductType, ID, t.Z, t.X, t.Y, ApiKey)
 
 	log.Debugf("Fetching tile %q", ID)
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := retryablehttp.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
-	res, err := http.DefaultClient.Do(req.WithContext(ctx))
+	client := retryablehttp.NewClient()
+	res, err := client.Do(req.WithContext(ctx))
 	if err != nil {
 		return nil, err
 	}
 	if res.StatusCode != 200 {
 		buf := new(strings.Builder)
 		io.Copy(buf, res.Body)
-		return nil, fmt.Errorf("tile server %v: %q", res.Status, buf.String())
+		return nil, fmt.Errorf("tile %v: %q", res.Status, buf.String())
 	}
+
 	return png.Decode(res.Body)
 }
 
