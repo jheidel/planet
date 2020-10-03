@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"planet-server/metaserver"
+	"planet-server/planet"
 	"planet-server/thumbserver"
 	"planet-server/tileserver"
 	"syscall"
@@ -45,14 +46,16 @@ func main() {
 		log.Debugf("Debug logging enabled")
 	}
 
-	ts := tileserver.New()
-	ms := metaserver.New()
-	ths := thumbserver.New()
+	pl := planet.New(ctx)
+	ts := tileserver.New(pl)
+	ms := metaserver.New(pl)
+	ths := thumbserver.New(pl)
 
 	router := mux.NewRouter()
 	router.Handle("/api/tile/{z:[0-9]+}/{x:[0-9]+}/{y:[0-9]+}.png", ts).Methods("GET")
 	router.Handle("/api/thumb/{id:[A-Za-z0-9_-]+}.png", ths).Methods("GET")
 	router.Handle("/api/search", ms).Methods("GET")
+	router.HandleFunc("/api/key", pl.ServeKeySaveHandler).Methods("POST")
 
 	router.PathPrefix("/debug/pprof/").Handler(http.DefaultServeMux)
 

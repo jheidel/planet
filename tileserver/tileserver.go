@@ -41,12 +41,14 @@ var (
 )
 
 type TileServer struct {
-	Cache *tilecache.MultiCache
+	Cache  *tilecache.MultiCache
+	Client *planet.Client
 }
 
-func New() *TileServer {
+func New(p *planet.Client) *TileServer {
 	return &TileServer{
-		Cache: tilecache.NewMulti(),
+		Cache:  tilecache.NewMulti(),
+		Client: p,
 	}
 }
 
@@ -139,7 +141,7 @@ func (s *TileServer) getFeatures(pctx context.Context, tile maptile.Tile, dt tim
 	go func() {
 		// Request a padded region to reduce the number of API requests.
 		region := tile.Bound(BoundExpand)
-		resp, err := planet.QuickSearch(ctx, planet.RequestRegionOnDate(region, dt))
+		resp, err := s.Client.QuickSearch(ctx, planet.RequestRegionOnDate(region, dt))
 		if err != nil {
 			errc <- err
 			return
@@ -223,7 +225,7 @@ func (s *TileServer) getTile(r *http.Request) (image.Image, error) {
 		}
 	}
 
-	img, err := planet.FetchTiles(r.Context(), IDs, tile)
+	img, err := s.Client.FetchTiles(r.Context(), IDs, tile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch tiles: %v", err)
 	}
