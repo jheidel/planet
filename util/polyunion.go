@@ -3,22 +3,48 @@ package util
 import (
 	"github.com/paulmach/orb"
 
-	log "github.com/sirupsen/logrus"
+	hull "github.com/furstenheim/go-convex-hull-2d"
 )
+
+type coordinates []orb.Point
+
+func (c coordinates) Take(i int) (x, y float64) {
+	return c[i][0], c[i][1]
+}
+
+func (c coordinates) Len() int {
+	return len(c)
+}
+
+func (c coordinates) Swap(i, j int) {
+	c[i], c[j] = c[j], c[i]
+}
+
+func (c coordinates) Slice(i, j int) hull.Interface {
+	return c[i:j]
+}
+
+func toOuterRing(p orb.Polygon) coordinates {
+	if len(p) == 0 {
+		return coordinates{}
+	}
+	return coordinates(p[0])
+}
 
 // PolyUnion provides union functionality for orb polygons using the geos library.
 func PolyUnion(p1, p2 orb.Polygon) orb.Polygon {
-	if len(p1) == 0 {
-		return p2
+	var c coordinates
+	c = append(c, toOuterRing(p1)...)
+	c = append(c, toOuterRing(p2)...)
+	h := hull.New(c)
+
+	var ring orb.Ring
+	for i := 0; i < h.Len(); i++ {
+		x, y := h.Take(i)
+		ring = append(ring, orb.Point{x, y})
 	}
-	if len(p2) == 0 {
-		return p1
+	if len(ring) > 0 && !ring.Closed() {
+		ring = append(ring, ring[0])
 	}
-	u := GeoUnion(p1, p2)
-	p, ok := u.(orb.Polygon)
-	if !ok {
-		log.Errorf("GeoUnion didn't return a polygon for %v and %v", debugGeoJson(p1), debugGeoJson(p2))
-		return orb.Polygon{}
-	}
-	return p
+	return orb.Polygon{ring}
 }
