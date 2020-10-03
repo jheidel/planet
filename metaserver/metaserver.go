@@ -53,6 +53,7 @@ type metaEntry struct {
 
 type metaResponse struct {
 	Results []*metaEntry `json:"results"`
+	Error   string       `json:"error"`
 }
 
 func parseRequest(r *http.Request) (*metaRequest, error) {
@@ -155,10 +156,19 @@ outer:
 }
 
 func (s *MetaServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	jsonError := func(err error, code int) {
+		w.WriteHeader(code)
+		mr := &metaResponse{Error: err.Error()}
+		if err := json.NewEncoder(w).Encode(mr); err != nil {
+			log.Errorf("error encode: %v", err)
+		}
+	}
+
 	req, err := parseRequest(r)
 	if err != nil {
-		w.Header().Set("Content-Type", "plain/text")
-		http.Error(w, fmt.Sprintf("%v", err), http.StatusBadRequest)
+		log.Errorf("meta parseRequest: %v", err)
+		jsonError(err, http.StatusBadRequest)
 		return
 	}
 
@@ -172,8 +182,8 @@ func (s *MetaServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	t := time.Now()
 	resp, err := planet.QuickSearch(r.Context(), planet.RequestRegion(region, start, end))
 	if err != nil {
-		w.Header().Set("Content-Type", "plain/text")
-		http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
+		log.Errorf("meta QuickSearch: %v", err)
+		jsonError(err, http.StatusInternalServerError)
 		return
 	}
 	log.Debugf("API search in %v", time.Since(t))
@@ -205,7 +215,6 @@ func (s *MetaServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(mr); err != nil {
 		log.Errorf("meta encode: %v", err)
 	}

@@ -7,13 +7,14 @@ import '@polymer/app-layout/app-scroll-effects/app-scroll-effects.js';
 import '@polymer/app-layout/app-toolbar/app-toolbar.js';
 import '@polymer/paper-icon-button/paper-icon-button.js';
 import '@polymer/paper-button/paper-button.js';
+import '@polymer/paper-input/paper-input.js';
 import '@polymer/paper-slider/paper-slider.js';
 import '@polymer/paper-spinner/paper-spinner.js';
 import '@polymer/iron-ajax/iron-ajax.js';
-import './icons.js';
+import '@polymer/iron-icon/iron-icon.js';
+import '@polymer/iron-icons/iron-icons.js';
+import './pl-icons.js';
 import moment from 'moment/src/moment.js';
-//import 'moment/src/locale/en.js';
-
 
 import 'leaflet/src/control';
 import 'leaflet/src/core';
@@ -33,8 +34,8 @@ class PlanetApp extends PolymerElement {
   static get template() {
     return html`
 
+      <!-- FIXME: Include from locally served copy -->
       <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css" />
-      <!-- FIXME: Figure out Shadow DOM so this doesn't have to be included here -->
       <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.3.0/dist/MarkerCluster.css" media="screen">
       <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.3.0/dist/MarkerCluster.Default.css" media="screen">
 
@@ -151,9 +152,33 @@ class PlanetApp extends PolymerElement {
           transition-delay: 1s;
         }
 
+
+        .error-container {
+          padding: 10px;
+        }
+        .error {
+          color: maroon;
+          font-weight: bold;
+        }
+
+        .error-message {
+          font-family: monospace;
+          padding: 5px;
+          font-size: small;
+          color: 666;
+        }
+
+        .icon-container {
+          display: flex;
+          align-items: center;
+        }
+        .icon-container > iron-icon {
+          padding-right: 5px;
+        }
       </style>
 
-      <iron-ajax id="search" handle-as="json" on-response="handleSearch_" url="/api/search" params="[[params_]]" auto="[[params_]]" debounce-duration="300" loading="{{loading_}}"></iron-ajax>
+      <iron-ajax id="search" handle-as="json" on-response="handleSearch_" on-error="handleSearchError_" url="/api/search" params="[[params_]]" auto="[[params_]]" debounce-duration="300" loading="{{loading_}}"></iron-ajax>
+      <iron-ajax id="apiKeyUpdate" url="/api/key" method="POST" handle-as="text"></iron-ajax>
 
       <app-drawer-layout fullbleed="" force-narrow="[[forceNarrow_]]">
         <app-drawer id="drawer" slot="drawer" swipe-open="">
@@ -205,6 +230,54 @@ class PlanetApp extends PolymerElement {
                     </div>
                   </div>
                 </template>
+
+                <div hidden$="[[!isError]]" class="error-container">
+                  <div class="error icon-container">
+                    <span>
+                      <iron-icon icon="error"></iron-icon>
+                      Problem Loading Satellite Imagery
+                    </span>
+                  </div>
+                  <div class="error-message">[[errorMessage]]</div>
+                  <div hidden$="[[!isApiKeyError]]">
+                    <p>
+                    <div>It looks like we need a new Planet API key! You can help!</div>
+                    <ol>
+                      <li>
+                        Go to <a href="https://www.planet.com/login/" target="_blank">https://www.planet.com</a>.
+                        Click <em>Sign Up</em> and create a trial account.
+                        <p>
+                      </li>
+                      <li>
+                        Open <em>My Account</em>
+                        <div>
+                          <img src="/images/planet_myaccount.png">
+                        </div>
+                        <p>
+                      </li>
+                      <li>
+                        Copy the <em>API Key</em>
+                        <div>
+                          <img width="350" src="/images/planet_apikey.png">
+                        </div>
+                        <p>
+                      </li>
+                      <li>
+                        Paste it here:
+                        <div>
+                          <paper-input id="apiKey" label="Enter API Key"></paper-input>
+                          <paper-button raised="" on-tap="onApiKey_">SAVE</paper-button>
+                          <paper-spinner id="apiKeySpinner"></paper-spinner>
+                        </div>
+                        <p>
+                      </li>
+                    </ol>
+                
+
+
+
+                  </div>
+                </div>
               </div>
             </div>
  
@@ -212,7 +285,7 @@ class PlanetApp extends PolymerElement {
           </div>
         </app-drawer>
         <div id="map-overlay-top">
-          <paper-icon-button class="white-overlay" icon="icons:menu" on-tap="drawerToggle_"></paper-icon-button>
+          <paper-icon-button class="white-overlay" icon="pl-icons:menu" on-tap="drawerToggle_"></paper-icon-button>
         </div>
         <div id="map-overlay-bottom">
           <div class="map-loading white-overlay" hidden$="[[!mapLoading_]]">
@@ -277,6 +350,19 @@ class PlanetApp extends PolymerElement {
         type: Boolean,
         value: false,
       },
+
+      isError: {
+        type: Boolean,
+        value: false,
+      },
+      errorMessage: {
+        type: String,
+        value: "",
+      },
+      isApiKeyError: {
+        type: Boolean,
+        value: false,
+      },
     };
   }
 
@@ -298,10 +384,25 @@ class PlanetApp extends PolymerElement {
   }
 
   handleSearch_(e) {
+    this.$.results.scrollTop = 0;  // scroll back to top
+
     if (e.detail.response && e.detail.response.results) {
+      this.isError = false;
       this.search = e.detail.response.results;
-      this.$.results.scrollTop = 0;  // scroll back to top
     }
+  }
+
+  handleSearchError_(e) {
+    this.$.results.scrollTop = 0;  // scroll back to top
+
+    this.isError = true;
+    this.search = [];
+
+    const resp = e.detail.request.xhr.response;
+
+    this.errorMessage = resp.error;
+    const keyRe = /\bkey\b/g;
+    this.isApiKeyError = !!resp.error.match(keyRe);
   }
 
   loadTiles_(e) {
@@ -397,6 +498,21 @@ class PlanetApp extends PolymerElement {
     console.log("toggle");
     this.$.drawer.toggle();
     this.forceNarrow_ = !this.$.drawer.opened;
+  }
+
+  onApiKey_() {
+    const value = this.$.apiKey.value.trim();
+    const ajax = this.$.apiKeyUpdate;
+    ajax.body = 'key=' + value;
+    ajax.generateRequest();
+    this.$.apiKeySpinner.active = true;
+
+    // A bit ugly, but try the API request again after a reasonable amount of time.
+    setTimeout(() => {
+      this.$.search.generateRequest();
+      this.$.apiKey.value = "";
+      this.$.apiKeySpinner.active = false;
+    }, 1000);
   }
 }
 

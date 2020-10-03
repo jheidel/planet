@@ -1,6 +1,6 @@
 import '@polymer/iron-iconset-svg/iron-iconset-svg.js';
 const $_documentContainer = document.createElement('template');
-$_documentContainer.innerHTML = `<iron-iconset-svg name="icons" size="24">
+$_documentContainer.innerHTML = `<iron-iconset-svg name="pl-icons" size="24">
   <svg>
     <defs>
       <g id="arrow-back">
