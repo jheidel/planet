@@ -46,10 +46,13 @@ type metaEntry struct {
 
 	Geometry    *geojson.Geometry `json:"geometry"`
 	SatelliteID string            `json:"satellite_id"`
+
+	TileName string `json:"tile_name"`
+	TileURL  string `json:"tile_url"`
 }
 
 type metaResponse struct {
-	Entries []*metaEntry `json:"entires"`
+	Results []*metaEntry `json:"results"`
 }
 
 func parseRequest(r *http.Request) (*metaRequest, error) {
@@ -82,18 +85,18 @@ func parseRequest(r *http.Request) (*metaRequest, error) {
 	if err != nil {
 		return nil, fmt.Errorf("bad z: %v", err)
 	}
-	if req.Z < 10 {
-		req.Z = 10
+	if req.Z < 12 {
+		req.Z = 12
 	}
 	return req, nil
 }
 
-func hashToDate(f *planet.Feature) string {
+func dateOfFeature(f *planet.Feature) string {
 	return f.Properties.Acquired.In(util.LocationOrDie()).Format("2006-01-02")
 }
 
 func sameDate(f1, f2 *planet.Feature) bool {
-	return hashToDate(f1) == hashToDate(f2)
+	return dateOfFeature(f1) == dateOfFeature(f2)
 }
 
 func sameSatellite(f1, f2 *planet.Feature) bool {
@@ -188,7 +191,7 @@ func (s *MetaServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	mr := &metaResponse{}
 	for _, f := range features {
-		mr.Entries = append(mr.Entries, &metaEntry{
+		mr.Results = append(mr.Results, &metaEntry{
 			Thumb:          fmt.Sprintf("/api/thumb/%s.png", f.ID),
 			Acquired:       f.Properties.Acquired,
 			VisiblePercent: f.Properties.VisiblePercent,
@@ -196,6 +199,9 @@ func (s *MetaServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			CloudPercent:   f.Properties.CloudPercent,
 			Geometry:       f.Geometry,
 			SatelliteID:    f.Properties.SatelliteID,
+
+			TileName: "Planet " + dateOfFeature(f),
+			TileURL:  fmt.Sprintf("/api/tile/{z}/{x}/{y}.png?date=" + dateOfFeature(f)),
 		})
 	}
 

@@ -656,6 +656,13 @@
   dependencies:
     "@polymer/polymer" "^3.0.0"
 
+"@polymer/iron-ajax@^3.0.1":
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/@polymer/iron-ajax/-/iron-ajax-3.0.1.tgz#831781be31ced011ac7243a46e34a775a4bb3133"
+  integrity sha512-7+TPEAfWsRdhj1Y8UeF1759ktpVu+c3sG16rJiUC3wF9+woQ9xI1zUm2d59i7Yc3aDEJrR/Q8Y262KlOvyGVNg==
+  dependencies:
+    "@polymer/polymer" "^3.0.0"
+
 "@polymer/iron-autogrow-textarea@^3.0.0-pre.26":
   version "3.0.3"
   resolved "https://registry.yarnpkg.com/@polymer/iron-autogrow-textarea/-/iron-autogrow-textarea-3.0.3.tgz#b75dbebc23ce47d428a26156709d4a8a4c05823e"
@@ -839,6 +846,14 @@
     "@polymer/paper-behaviors" "^3.0.0-pre.27"
     "@polymer/paper-input" "^3.0.0-pre.26"
     "@polymer/paper-progress" "^3.0.0-pre.26"
+    "@polymer/paper-styles" "^3.0.0-pre.26"
+    "@polymer/polymer" "^3.0.0"
+
+"@polymer/paper-spinner@^3.0.2":
+  version "3.0.2"
+  resolved "https://registry.yarnpkg.com/@polymer/paper-spinner/-/paper-spinner-3.0.2.tgz#c857c79f0494bc74e9ae293839d00f37fcf29f78"
+  integrity sha512-XUzu8/4NH+pnNZUTI2MxtOKFAr0EOsW7eGhTg3VBhTh7DDW/q3ewzwYRWnqNJokX9BEnxKMiXXaIeTEBq4k2dw==
+  dependencies:
     "@polymer/paper-styles" "^3.0.0-pre.26"
     "@polymer/polymer" "^3.0.0"
 
@@ -5813,7 +5828,7 @@ mkdirp@^1.0.0:
   resolved "https://registry.yarnpkg.com/mkdirp/-/mkdirp-1.0.4.tgz#3eb5ed62622756d79a5f0e2a221dfebad75c2f7e"
   integrity sha512-vVqVZQyf3WLx2Shd0qJ9xuvqgAyKPLAiqITEtqW0oIUjzo3PePDd6fW9iFz30ef7Ysp/oiWqbhszeGWW2T6Gzw==
 
-moment@^2.15.1, moment@^2.24.0:
+moment@^2.15.1, moment@^2.24.0, moment@^2.29.0:
   version "2.29.0"
   resolved "https://registry.yarnpkg.com/moment/-/moment-2.29.0.tgz#fcbef955844d91deb55438613ddcec56e86a3425"
   integrity sha512-z6IJ5HXYiuxvFTI6eiQ9dm77uE0gyy1yXNApVHqTcnIKfY9tIwEjlzsZ6u1LQXvVgKeTnv9Xm7NDvJ7lso3MtA==

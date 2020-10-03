@@ -6,12 +6,15 @@ import '@polymer/app-layout/app-header/app-header.js';
 import '@polymer/app-layout/app-scroll-effects/app-scroll-effects.js';
 import '@polymer/app-layout/app-toolbar/app-toolbar.js';
 import '@polymer/paper-icon-button/paper-icon-button.js';
-import '@polymer/paper-slider/paper-slider.js';
-import '@polymer/paper-input/paper-input.js';
 import '@polymer/paper-button/paper-button.js';
+import '@polymer/paper-slider/paper-slider.js';
+import '@polymer/paper-spinner/paper-spinner.js';
+import '@polymer/iron-ajax/iron-ajax.js';
 import './icons.js';
+import moment from 'moment/src/moment.js';
+//import 'moment/src/locale/en.js';
 
-// Need these side effects
+
 import 'leaflet/src/control';
 import 'leaflet/src/core';
 import 'leaflet/src/layer';
@@ -39,6 +42,7 @@ class PlanetApp extends PolymerElement {
         :host {
           --app-primary-color: #009da5;
           --app-secondary-color: black;
+          --app-drawer-width: 450px;
           display: block;
         }
 
@@ -51,16 +55,27 @@ class PlanetApp extends PolymerElement {
           background-color: var(--app-primary-color);
         }
 
-        paper-icon-button.white {
+        .white-overlay {
           background-color: white;
           border-radius: 5px;
         }
 
-        #map-overlay {
+        #map-overlay-top {
           position: absolute;
           z-index: 999;
           left: 7px;
           top: 80px;
+        }
+
+        #map-overlay-bottom {
+          position: absolute;
+          z-index: 999;
+          right: 7px;
+          bottom: 20px;
+        }
+
+        .map-loading {
+          padding: 5px;
         }
 
         #map {
@@ -71,12 +86,74 @@ class PlanetApp extends PolymerElement {
           bottom: 0;
         }
 
-        #sidebar {
-          margin: 5px;
+        app-header {
+          height: 64px;
+        }
 
+        #sidebar {
+          display: flex;
+          flex-direction: column;
+          height: calc(100% - 64px);
+        }
+
+        #loading {
+          position: absolute;
+          top: 0;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          z-index: 99;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background-color: rgba(255, 255, 255, 0.7);
+        }
+
+        #loading > paper-spinner {
+          height: 50px;
+          width: 50px;
+        }
+
+        #sidebar-top {
+          flex: 0 1 auto;
+        }
+
+        #results-container {
+          flex: 1 1 auto;
+          position: relative;
+        }
+        #results {
+          position: absolute;
+          top: 0;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          overflow: auto;
+        }
+
+        .result {
+          margin: 10px;
+          padding: 5px;
+          background-color: #eee;
+          display: flex;
+        }
+
+        .thumb {
+          padding-right: 10px;
+        }
+        .thumb > img {
+          width: 150px;
+          height: 150px;
+        }
+
+        .currently-showing {
+          padding: 5px;
+          transition-delay: 1s;
         }
 
       </style>
+
+      <iron-ajax id="search" handle-as="json" on-response="handleSearch_" url="/api/search" loading="{{loading_}}"></iron-ajax>
 
       <app-drawer-layout fullbleed="" force-narrow="[[forceNarrow_]]">
         <app-drawer id="drawer" slot="drawer" swipe-open="">
@@ -84,34 +161,66 @@ class PlanetApp extends PolymerElement {
             <app-toolbar>Planet Data Viewer</app-toolbar>
           </app-header>
           <div id="sidebar">
+            <div id="sidebar-top">
 
-            <div>
-              Satellite Opacity ([[opacity]]%)
-              <paper-slider min="0" max="100" value="[[opacity]]" immediate-value="{{opacity}}"></paper-slider>
-            </div>
-
-            <div>
-              <paper-input label="Imagery Date" always-float-label="" id="dateinput" value="2020-09-30"></paper-input>
-              <paper-button raised="" on-tap="loadTiles_">Load Tiles</paper-button>
-            </div>
-
-            <div hidden="[[!tileUrl_]]">
-              <div>
-                <p>
-                <small>
-                  The CalTopo generated link is brittle so I wouldn't be surprised if it breaks in the future.
-                </small>
+              <div class="currently-showing" hidden="[[!tileUrl_]]">
+                <div>
+                  Showing <b>[[tileName_]]</b>
+                </div>
+                <div class="buttons">
+                  <paper-button raised="" on-tap="clearTiles_">Clear</paper-button>
+                  <paper-button raised="" on-tap="openCaltopo_">Open View in CalTopo</paper-button>
+                </div>
+                <div>
+                  <small>
+                    The CalTopo generated link is brittle so I wouldn't be surprised if it breaks in the future.
+                  </small>
+                </div>
+                <div>
+                  Satellite Opacity ([[opacity]]%)
+                  <paper-slider min="0" max="100" value="[[opacity]]" immediate-value="{{opacity}}"></paper-slider>
+                </div>
               </div>
-              <div>
-                <paper-button raised="" on-tap="openCaltopo_">Open View in CalTopo</paper-button>
+            </div>
+
+
+            <div id="results-container">
+              <div id="loading" hidden$="[[!loading_]]">
+                <paper-spinner active=""></paper-spinner>
+              </div>
+              <div id="results">
+                <template is="dom-repeat" items="[[search]]">
+                  <div class="result">
+                    <div class="thumb">
+                      <img src="[[item.thumb]]">
+                    </div>
+                    <div>
+                      <div><b>[[toDate(item.acquired)]]</b></div>
+                      <div><b>[[toTime(item.acquired)]]</b></div>
+                      <div><i>Captured [[toDelta(item.acquired)]] ago</i></div>
+                      <div>Visibility: <b>[[item.clear_percent]]%</b></div>
+                      <div>
+                        <paper-button data-name$="[[toName(item)]]" data-url$="[[item.tile_url]]" raised="" on-tap="loadTiles_">Load</paper-button>
+                      </div>
+                    </div>
+                  </div>
+                </template>
               </div>
             </div>
  
 
           </div>
         </app-drawer>
-        <div id="map-overlay">
-          <paper-icon-button class="white" icon="icons:menu" on-tap="drawerToggle_"></paper-icon-button>
+        <div id="map-overlay-top">
+          <paper-icon-button class="white-overlay" icon="icons:menu" on-tap="drawerToggle_"></paper-icon-button>
+        </div>
+        <div id="map-overlay-bottom">
+          <div class="map-loading white-overlay" hidden$="[[!mapLoading_]]">
+            Loading Map Tiles... 
+            <div>
+            <paper-spinner active=""></paper-spinner>
+            </div>
+          </div>
         </div>
         <div id="map">
         </div>
@@ -151,21 +260,69 @@ class PlanetApp extends PolymerElement {
       bounds: {
         type: Object,
       },
+
+      search: {
+        type: Object,
+      },
+
+      loading_: {
+        type: Boolean,
+        value: false,
+      },
+      mapLoading_: {
+        type: Boolean,
+        value: false,
+      },
     };
   }
 
-  loadTiles_() {
-    this.tileName_ = 'Planet ' + this.$.dateinput.value;
-    this.planetLayer.setUrl('/api/tile/{z}/{x}/{y}.png?date=' + this.$.dateinput.value);
-    this.tileUrl_ = '/api/tile/{Z}/{X}/{Y}.png?date=' + this.$.dateinput.value;
+  toName(r) {
+    return this.toDate(r.acquired);
+  }
+
+  toDate(ts) {
+    const m = moment(ts);
+    return m.format("dddd") + ", " + m.format("LL");
+  }
+  toTime(ts) {
+    return moment(ts).format("LT");
+  }
+  toDelta(ts) {
+    const now = moment();
+    const m = moment(ts);
+    return moment.duration(now.diff(m)).humanize();
+  }
+
+  handleSearch_(e) {
+    if (e.detail.response && e.detail.response.results) {
+      this.search = e.detail.response.results;
+      this.$.results.scrollTop = 0;  // scroll back to top
+    }
+  }
+
+  loadTiles_(e) {
+    this.tileName_ = e.target.dataset.name;
+    this.tileUrl_ = e.target.dataset.url;
+    this.planetLayer.setUrl(this.tileUrl_);
+  }
+
+  clearTiles_(e) {
+    this.tileName_ = '';
+    this.tileUrl_ = '';
+    this.planetLayer.setUrl('');
   }
 
   openCaltopo_() {
     const center = this.bounds.getCenter();
 
-    const tiles = 'https://planet.jeffheidel.com' + this.tileUrl_;
+    const name = "Planet - " + this.tileName_;
+    var tiles = 'https://planet.jeffheidel.com' + this.tileUrl_;
+    tiles = tiles.replace("{x}", `{X}`);
+    tiles = tiles.replace("{y}", `{Y}`);
+    tiles = tiles.replace("{z}", `{Z}`);
+
     const t1 = '{"template":"' + tiles + '","type":"TILE","maxzoom":"20"}'
-    const t2 = '{"custom":[{"properties":{"title":"' + this.tileName_ + '","template":"' + tiles + '","type":"TILE","maxzoom":"20","alphaOverlay":false,"class":"CustomLayer"},"id":""}]}';
+    const t2 = '{"custom":[{"properties":{"title":"' + name + '","template":"' + tiles + '","type":"TILE","maxzoom":"20","alphaOverlay":false,"class":"CustomLayer"},"id":""}]}';
     const enc = encodeURIComponent(encodeURIComponent(t1)) + '&n=1&cl=' + encodeURIComponent(t2);
     const url = 'https://caltopo.com/map.html#ll=' + center.lat + ',' + center.lng + '&z=' + this.zoom + '&b=mbt&o=cl_' + enc;
 
@@ -176,7 +333,15 @@ class PlanetApp extends PolymerElement {
     this.zoom = zoom;
     this.bounds = bounds;
 
-    // TODO new API request
+    const center = this.bounds.getCenter();
+
+    this.$.search.params = {
+      'lat': center.lat,
+      'lng': center.lng,
+      'z': this.zoom,
+      'group_by': 'date',
+    };
+    this.$.search.generateRequest();
   }
 
   connectedCallback() {
@@ -205,6 +370,15 @@ class PlanetApp extends PolymerElement {
         attribution: '&copy; <a href="https://www.planet.com/">Planet</a>'
     });
     this.planetLayer.addTo(this.map);
+
+    this.planetLayer.on('loading', () => {
+      if (this.tileUrl_) {
+        this.mapLoading_ = true;
+      }
+    });
+    this.planetLayer.on('load', () => {
+      this.mapLoading_ = false;
+    });
 
     // TODO need viewport to issue ajax request....
   }
