@@ -8,6 +8,8 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
+	"planet-server/metaserver"
+	"planet-server/thumbserver"
 	"planet-server/tileserver"
 	"syscall"
 
@@ -44,9 +46,14 @@ func main() {
 	}
 
 	ts := tileserver.New()
+	ms := metaserver.New()
+	ths := thumbserver.New()
 
 	router := mux.NewRouter()
 	router.Handle("/api/tile/{z:[0-9]+}/{x:[0-9]+}/{y:[0-9]+}.png", ts).Methods("GET")
+	router.Handle("/api/thumb/{id:[A-Za-z0-9_-]+}.png", ths).Methods("GET")
+	router.Handle("/api/search", ms).Methods("GET")
+
 	router.PathPrefix("/debug/pprof/").Handler(http.DefaultServeMux)
 
 	srv := &http.Server{

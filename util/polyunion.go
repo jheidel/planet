@@ -8,6 +8,9 @@ import (
 func toClip(p orb.Polygon) polyclip.Polygon {
 	var poly polyclip.Polygon
 	for _, ring := range p {
+		if len(ring) > 0 && !ring.Closed() {
+			ring = append(ring, ring[0])
+		}
 		var ct polyclip.Contour
 		for _, pt := range ring {
 			ct = append(ct, polyclip.Point{X: pt[0], Y: pt[1]})
@@ -23,6 +26,9 @@ func fromClip(poly polyclip.Polygon) orb.Polygon {
 		var ring orb.Ring
 		for _, pt := range ct {
 			ring = append(ring, orb.Point{pt.X, pt.Y})
+		}
+		if len(ring) > 0 && !ring.Closed() {
+			ring = append(ring, ring[0])
 		}
 		p = append(p, ring)
 	}

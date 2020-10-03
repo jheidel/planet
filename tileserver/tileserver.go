@@ -71,11 +71,7 @@ func dateFromRequest(v string) (time.Time, error) {
 		return time.Time{}, fmt.Errorf("missing date")
 	}
 	// TODO request from frontend can include TZ
-	loc, err := time.LoadLocation(util.EnvOrDefault("TZ", "America/Los_Angeles"))
-	if err != nil {
-		return time.Time{}, err
-	}
-	return time.ParseInLocation("2006-01-02", v, loc)
+	return time.ParseInLocation("2006-01-02", v, util.LocationOrDie())
 }
 
 func blankImage() *image.RGBA {

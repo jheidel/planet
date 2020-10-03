@@ -10,7 +10,7 @@ import (
 // TODO request tiles for satellite pass
 // TODO request individual tile
 
-func RequestRegionOnDate(bound orb.Bound, d time.Time) *Request {
+func RequestRegion(bound orb.Bound, start, end time.Time) *Request {
 	return &Request{
 		Filter: &AndFilter{
 			Type: "AndFilter",
@@ -19,8 +19,8 @@ func RequestRegionOnDate(bound orb.Bound, d time.Time) *Request {
 					Type:      "DateRangeFilter",
 					FieldName: "acquired",
 					Config: &DateRange{
-						Start: d,
-						End:   d.Add(24 * time.Hour),
+						Start: start,
+						End:   end,
 					},
 				},
 				&GeoFilter{
@@ -32,4 +32,8 @@ func RequestRegionOnDate(bound orb.Bound, d time.Time) *Request {
 		},
 		ItemTypes: []string{ProductType},
 	}
+}
+
+func RequestRegionOnDate(bound orb.Bound, d time.Time) *Request {
+	return RequestRegion(bound, d, d.Add(24*time.Hour))
 }

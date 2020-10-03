@@ -112,3 +112,31 @@ func FetchTiles(pctx context.Context, IDs []string, t maptile.Tile) (image.Image
 	}
 	return out, nil
 }
+
+func FetchThumb(pctx context.Context, ID string, w io.Writer) error {
+	ctx, cancel := context.WithDeadline(pctx, time.Now().Add(15*time.Second))
+	defer cancel()
+
+	url := fmt.Sprintf("https://tiles%d.planet.com/data/v1/item-types/%s/items/%s/thumb?api_key=%s", rand.Intn(4), ProductType, ID, ApiKey)
+
+	log.Debugf("Fetching thumb %q", ID)
+	req, err := retryablehttp.NewRequest("GET", url, nil)
+	if err != nil {
+		return err
+	}
+	res, err := planetClient().Do(req.WithContext(ctx))
+	if res == nil {
+		return fmt.Errorf("http: %v", err)
+	}
+	defer res.Body.Close()
+	if res.StatusCode != 200 {
+		buf := new(strings.Builder)
+		io.Copy(buf, res.Body)
+		return fmt.Errorf("thumb %v: %q", res.Status, buf.String())
+	}
+
+	if _, err := io.Copy(w, res.Body); err != nil {
+		return err
+	}
+	return nil
+}
