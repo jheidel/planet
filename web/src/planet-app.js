@@ -699,6 +699,7 @@ class PlanetApp extends PolymerElement {
 
     setTimeout(() => {
       this.map.invalidateSize({animate: true});
+      this.$.mapSearch.focus();
     }, 250);
   }
 
