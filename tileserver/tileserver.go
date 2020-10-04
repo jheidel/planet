@@ -124,11 +124,20 @@ func toErrorTile(err error) image.Image {
 	return img
 }
 
-func (s *TileServer) getFeatures(pctx context.Context, tile maptile.Tile, dt time.Time) ([]*planet.Feature, error) {
+func (s *TileServer) getFeatures(pctx context.Context, tile maptile.Tile, ts time.Time, satellite string) ([]*planet.Feature, error) {
 	ctx, cancel := context.WithCancel(pctx)
 	defer cancel()
 
-	cache := s.Cache.For(dt)
+	var cache *tilecache.TileCache
+	if satellite == "" {
+		cache = s.Cache.For(ts)
+	} else {
+		key := struct {
+			Ts        time.Time
+			Satellite string
+		}{ts, satellite}
+		cache = s.Cache.For(key)
+	}
 
 	// Try the cache directly first.
 	features, ok := cache.Get(tile.Bound())
@@ -141,7 +150,15 @@ func (s *TileServer) getFeatures(pctx context.Context, tile maptile.Tile, dt tim
 	go func() {
 		// Request a padded region to reduce the number of API requests.
 		region := tile.Bound(BoundExpand)
-		resp, err := s.Client.QuickSearch(ctx, planet.RequestRegionOnDate(region, dt))
+
+		var req *planet.Request
+		if satellite == "" {
+			req = planet.RequestRegionOnDate(region, ts)
+		} else {
+			req = planet.RequestRegionForSatellite(region, ts, satellite)
+		}
+
+		resp, err := s.Client.QuickSearch(ctx, req)
 		if err != nil {
 			errc <- err
 			return
@@ -166,38 +183,7 @@ func (s *TileServer) getFeatures(pctx context.Context, tile maptile.Tile, dt tim
 	}
 }
 
-func (s *TileServer) getTile(r *http.Request) (image.Image, error) {
-	tile, err := tileFromRequest(r)
-	if err != nil {
-		return nil, err
-	}
-
-	if tile.Z < 12 {
-		return nil, ErrZoom
-	}
-
-	// TODO other forms of requests, or maybe other API endpoints?
-	dt, err := dateFromRequest(r.Form.Get("date"))
-	if err != nil {
-		return nil, fmt.Errorf("invalid date %q: %v", r.Form["date"], err)
-	}
-
-	features, err := s.getFeatures(r.Context(), tile, dt)
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO visualize individual satellite passes.
-
-	// TODO tile server modes:
-	//  1) Maximum overlap for date
-	//  2) Individual satellite pass selection for AOI
-	//  3) Individual image selection
-
-	// URL to open in caltopo
-
-	// TODO thumbnail proxyP
-
+func getTileIDs(tile maptile.Tile, features []*planet.Feature) []string {
 	var IDs []string
 	var union orb.Polygon
 	for _, f := range features {
@@ -223,6 +209,69 @@ func (s *TileServer) getTile(r *http.Request) (image.Image, error) {
 		if coverage >= 1 {
 			break
 		}
+	}
+	return IDs
+}
+
+func parseUnix(s string) (time.Time, error) {
+	if s == "" {
+		return time.Time{}, fmt.Errorf("missing ts")
+	}
+	i, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return time.Unix(i, 0), nil
+}
+
+func (s *TileServer) getTile(r *http.Request) (image.Image, error) {
+	tile, err := tileFromRequest(r)
+	if err != nil {
+		return nil, err
+	}
+
+	ID := r.Form.Get("id")
+	date := r.Form.Get("date")
+
+	var IDs []string
+	if ID != "" {
+		// Search by ID
+		IDs = []string{ID}
+	} else {
+		// Search by date or satellite (mosaic)
+		var sat string
+		var ts time.Time
+
+		if date != "" {
+			// Search by date
+			var err error
+			ts, err = dateFromRequest(r.Form.Get("date"))
+			if err != nil {
+				return nil, fmt.Errorf("invalid date %q: %v", r.Form["date"], err)
+			}
+			if tile.Z < 11 {
+				// Zoom is bounded for date mosaic to prevent insane tile server load
+				return nil, ErrZoom
+			}
+		} else {
+			// Search by satellite
+			sat = r.Form.Get("satellite_id")
+			if sat == "" {
+				return nil, fmt.Errorf("missing satellite_id")
+			}
+			var err error
+			ts, err = parseUnix(r.Form.Get("ts"))
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		features, err := s.getFeatures(r.Context(), tile, ts, sat)
+		if err != nil {
+			return nil, err
+		}
+
+		IDs = getTileIDs(tile, features)
 	}
 
 	img, err := s.Client.FetchTiles(r.Context(), IDs, tile)

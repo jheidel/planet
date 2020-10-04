@@ -165,7 +165,9 @@ class PlanetApp extends PolymerElement {
 
         .currently-showing {
           padding: 5px;
-          transition-delay: 1s;
+          margin-left: 20px;
+          margin-right: 20px;
+          background-color: #e8e8e84d;
         }
 
 
@@ -201,6 +203,11 @@ class PlanetApp extends PolymerElement {
           padding-left: 10px;
         }
 
+        .satellite-id {
+          font-weight: bold;
+          font-family: monospace;
+        }
+
       </style>
 
       <iron-ajax id="search" handle-as="json" on-response="handleSearch_" on-error="handleSearchError_" url="/api/search" params="[[params_]]" auto="[[params_]]" debounce-duration="300" loading="{{loading_}}"></iron-ajax>
@@ -227,16 +234,19 @@ class PlanetApp extends PolymerElement {
                   Showing <b>[[tileName_]]</b>
                 </div>
                 <div class="buttons">
-                  <paper-button raised="" on-tap="clearTiles_">Clear</paper-button>
-                  <paper-button raised="" on-tap="openCaltopo_">Open View in CalTopo</paper-button>
+                  <p>
+                  <paper-button raised="" on-tap="clearTiles_">
+                    <iron-icon icon="clear"></iron-icon>
+                    Clear
+                  </paper-button>
+                  <paper-button raised="" on-tap="openCaltopo_">
+                    <iron-icon icon="open-in-browser"></iron-icon>
+                    Open View in CalTopo
+                  </paper-button>
                 </div>
                 <div>
-                  <small>
-                    The CalTopo generated link is brittle so I wouldn't be surprised if it breaks in the future.
-                  </small>
-                </div>
-                <div>
-                  Satellite Opacity ([[opacity]]%)
+                  <p>
+                  Satellite Overlay Opacity ([[opacity]]%)
                   <paper-slider min="0" max="100" value="[[opacity]]" immediate-value="{{opacity}}"></paper-slider>
                 </div>
               </div>
@@ -247,7 +257,7 @@ class PlanetApp extends PolymerElement {
                   <paper-checkbox checked="{{showSatellites}}">Show Satellite Tracks</paper-checkbox>
                 </div>
                 <div>
-                  <paper-checkbox checked="{{showImages}}" disabled="[[!showSatellites]]">Show Individual Images</paper-checkbox>
+                  <paper-checkbox id="imageCheckbox" checked="{{showImages}}" disabled="[[!showSatellites]]">Show Individual Images</paper-checkbox>
                 </div>
               </div>
 
@@ -268,9 +278,10 @@ class PlanetApp extends PolymerElement {
                       <div><b>[[toDate(item.acquired)]]</b></div>
                       <div><b>[[toTime(item.acquired)]]</b></div>
                       <div><i>Captured [[toDelta(item.acquired)]] ago</i></div>
+                      <div hidden$="[[!showSatellites]]">Satellite: <span class="satellite-id">[[item.satellite_id]]</span></div>
                       <div>Visibility: <b>[[item.clear_percent]]%</b></div>
                       <div>
-                        <paper-button data-name$="[[toName(item)]]" data-url$="[[item.tile_url]]" raised="" on-tap="loadTiles_">Load</paper-button>
+                        <paper-button data-name$="[[toName(item, showSatellites, showImages)]]" data-url$="[[item.tile_url]]" raised="" on-tap="loadTiles_" disabled="[[eq_(item.tile_url, tileUrl_)]]">Load</paper-button>
                       </div>
                     </div>
                   </div>
@@ -426,12 +437,20 @@ class PlanetApp extends PolymerElement {
 
   static get observers() {
     return [
-      'refreshParams(showSatellites, showImages)',
+      'optionsChanged(showSatellites, showImages)',
     ];
   }
 
-  toName(r) {
-    return this.toDate(r.acquired);
+  toName(r, showSatellites, showImages) {
+    let name = this.toDate(r.acquired);
+    if (showImages) {
+      name += ", " + this.toTime(r.acquired); 
+      name += " (" + r.id + ")";
+    } else if (showSatellites) {
+      name += ", " + this.toTime(r.acquired); 
+      name += " (SAT-" + r.satellite_id + ")";
+    }
+    return name;
   }
 
   toDate(ts) {
@@ -490,7 +509,9 @@ class PlanetApp extends PolymerElement {
   clearTiles_(e) {
     this.tileName_ = '';
     this.tileUrl_ = '';
-    this.planetLayer.setUrl('');
+    if (this.planetLayer) {
+      this.planetLayer.setUrl('');
+    }
   }
 
   openCaltopo_() {
@@ -514,6 +535,15 @@ class PlanetApp extends PolymerElement {
     this.zoom = zoom;
     this.bounds = bounds;
     this.refreshParams();
+  }
+
+  optionsChanged() {
+    this.clearTiles_();
+    this.refreshParams();
+
+    if (!this.showSatellites && this.showImages) {
+      this.$.imageCheckbox.checked = false;
+    }
   }
 
   refreshParams() {
@@ -632,12 +662,19 @@ class PlanetApp extends PolymerElement {
           return;
         }
         const ll = results[0].geometry.location;
-        this.map.setView([ll.lat(), ll.lng()], 14);
+        this.map.setView([ll.lat(), ll.lng()], 13);
       });
     } catch (err) {
       this.mapLoading_ = "";
       alert('Place search failed: ' + err);
     }
+  }
+
+  eq_(a, b) {
+    if (!a || !b) {
+      return false;
+    }
+    return a === b;
   }
 }
 

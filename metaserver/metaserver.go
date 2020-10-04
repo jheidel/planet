@@ -17,10 +17,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const (
-	SearchExpand = 5
-)
-
 type MetaServer struct {
 	Client *planet.Client
 }
@@ -47,9 +43,9 @@ type metaEntry struct {
 
 	Geometry    *geojson.Geometry `json:"geometry"`
 	SatelliteID string            `json:"satellite_id"`
+	ID          string            `json:"id"`
 
-	TileName string `json:"tile_name"`
-	TileURL  string `json:"tile_url"`
+	TileURL string `json:"tile_url"`
 }
 
 type metaResponse struct {
@@ -175,7 +171,7 @@ func (s *MetaServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	log.Debugf("Search request: %+v", spew.Sdump(req))
 
-	region := maptile.At(orb.Point{req.Lng, req.Lat}, maptile.Zoom(req.Z)).Bound(SearchExpand)
+	region := maptile.At(orb.Point{req.Lng, req.Lat}, maptile.Zoom(req.Z)).Bound()
 
 	end := time.Now()
 	start := end.Add(-30 * 24 * time.Hour)
@@ -202,6 +198,15 @@ func (s *MetaServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	mr := &metaResponse{}
 	for _, f := range features {
+		url := "/api/tile/{z}/{x}/{y}.png"
+		switch req.GroupBy {
+		case "date":
+			url += "?date=" + dateOfFeature(f)
+		case "satellite":
+			url += "?satellite_id=" + f.Properties.SatelliteID + "&ts=" + fmt.Sprintf("%d", f.Properties.Acquired.Unix())
+		default:
+			url += "?id=" + f.ID
+		}
 		mr.Results = append(mr.Results, &metaEntry{
 			Thumb:          fmt.Sprintf("/api/thumb/%s.png", f.ID),
 			Acquired:       f.Properties.Acquired,
@@ -210,9 +215,8 @@ func (s *MetaServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			CloudPercent:   f.Properties.CloudPercent,
 			Geometry:       f.Geometry,
 			SatelliteID:    f.Properties.SatelliteID,
-
-			TileName: "Planet " + dateOfFeature(f),
-			TileURL:  fmt.Sprintf("/api/tile/{z}/{x}/{y}.png?date=" + dateOfFeature(f)),
+			ID:             f.ID,
+			TileURL:        url,
 		})
 	}
 

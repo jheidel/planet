@@ -16,6 +16,12 @@ type GeoFilter struct {
 	FieldName string            `json:"field_name"`
 }
 
+type StringInFilter struct {
+	Type      string   `json:"type"`
+	FieldName string   `json:"field_name"`
+	Config    []string `json:"config"`
+}
+
 type DateRange struct {
 	Start time.Time `json:"gt"`
 	End   time.Time `json:"lte"`

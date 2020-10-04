@@ -7,9 +7,6 @@ import (
 	"github.com/paulmach/orb/geojson"
 )
 
-// TODO request tiles for satellite pass
-// TODO request individual tile
-
 func RequestRegion(bound orb.Bound, start, end time.Time) *Request {
 	return &Request{
 		Filter: &AndFilter{
@@ -36,4 +33,17 @@ func RequestRegion(bound orb.Bound, start, end time.Time) *Request {
 
 func RequestRegionOnDate(bound orb.Bound, d time.Time) *Request {
 	return RequestRegion(bound, d, d.Add(24*time.Hour))
+}
+
+func RequestRegionForSatellite(bound orb.Bound, d time.Time, satellite string) *Request {
+	start := d.Add(-15 * time.Minute)
+	end := d.Add(15 * time.Minute)
+	req := RequestRegion(bound, start, end)
+	af := req.Filter.(*AndFilter)
+	af.Config = append(af.Config, interface{}(&StringInFilter{
+		Type:      "StringInFilter",
+		FieldName: "satellite_id",
+		Config:    []string{satellite},
+	}))
+	return req
 }
