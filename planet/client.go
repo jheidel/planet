@@ -25,6 +25,7 @@ func planetHTTP() *retryablehttp.Client {
 		if log.GetLevel() >= log.DebugLevel {
 			client.Logger = log.StandardLogger()
 		}
+		client.RetryMax = 15
 		client.ErrorHandler = retryablehttp.PassthroughErrorHandler
 	})
 	return client

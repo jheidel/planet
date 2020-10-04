@@ -487,14 +487,15 @@ class PlanetApp extends PolymerElement {
     if (!ts) {
       return "";
     }
-    const m = moment(ts);
-    return m.format("dddd") + ", " + m.format("MMMM D, YYYY");
+    const d = new Date(ts);
+    return d.toLocaleDateString("en-US", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   }
   toTime(ts) {
     if (!ts) {
       return "";
     }
-    return moment(ts).format("h:mm A");
+    const d = new Date(ts);
+    return d.toLocaleTimeString("en-US", {timeStyle: 'short'}); 
   }
   toDelta(ts) {
     if (!ts) {
