@@ -34,6 +34,8 @@ const (
 	BoundExpand = 5
 
 	TileSize = 256
+
+	MinZ = 11
 )
 
 var (
@@ -249,7 +251,7 @@ func (s *TileServer) getTile(r *http.Request) (image.Image, error) {
 			if err != nil {
 				return nil, fmt.Errorf("invalid date %q: %v", r.Form["date"], err)
 			}
-			if tile.Z < 11 {
+			if tile.Z < MinZ {
 				// Zoom is bounded for date mosaic to prevent insane tile server load
 				return nil, ErrZoom
 			}
