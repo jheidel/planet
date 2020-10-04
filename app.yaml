@@ -36,3 +36,6 @@ handlers:
 automatic_scaling:
   min_instances: 1
   max_instances: 2
+  max_idle_instances: 1
+  target_cpu_utilization: 0.8
+  max_concurrent_requests: 30
