@@ -159,8 +159,8 @@ class PlanetApp extends PolymerElement {
           padding-right: 10px;
         }
         .thumb > img {
-          width: 150px;
-          height: 150px;
+          width: 100px;
+          height: 100px;
         }
 
         .currently-showing {
@@ -207,6 +207,27 @@ class PlanetApp extends PolymerElement {
           font-weight: bold;
           font-family: monospace;
         }
+        .fullwidth {
+          width: 100%;
+        }
+        .result-lower {
+          display: flex;
+          justify-content: space-between;
+        }
+        .buttons {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-top: 5px;
+        }
+
+        #opacity {
+          text-align: center;
+          font-size: small;
+        }
+        #opacity paper-slider {
+          width: 150px;
+        }
 
       </style>
 
@@ -231,23 +252,22 @@ class PlanetApp extends PolymerElement {
 
               <div class="currently-showing" hidden="[[!tileUrl_]]">
                 <div>
-                  Showing <b>[[tileName_]]</b>
+                  <div>Currently Viewing:</div>
+                  <div><b>[[tileName_]]</b></div>
                 </div>
                 <div class="buttons">
-                  <p>
                   <paper-button raised="" on-tap="clearTiles_">
                     <iron-icon icon="clear"></iron-icon>
                     Clear
                   </paper-button>
                   <paper-button raised="" on-tap="openCaltopo_">
                     <iron-icon icon="open-in-browser"></iron-icon>
-                    Open View in CalTopo
+                    CalTopo
                   </paper-button>
-                </div>
-                <div>
-                  <p>
-                  Satellite Overlay Opacity ([[opacity]]%)
-                  <paper-slider min="0" max="100" value="[[opacity]]" immediate-value="{{opacity}}"></paper-slider>
+                  <div id="opacity">
+                    <div>Opacity ([[opacity]]%)</div>
+                    <paper-slider min="0" max="100" value="[[opacity]]" immediate-value="{{opacity}}"></paper-slider>
+                  </div>
                 </div>
               </div>
 
@@ -274,14 +294,17 @@ class PlanetApp extends PolymerElement {
                     <div class="thumb">
                       <img src="[[item.thumb]]">
                     </div>
-                    <div>
+                    <div class="fullwidth">
                       <div><b>[[toDate(item.acquired)]]</b></div>
-                      <div><b>[[toTime(item.acquired)]]</b></div>
-                      <div><i>Captured [[toDelta(item.acquired)]] ago</i></div>
-                      <div hidden$="[[!showSatellites]]">Satellite: <span class="satellite-id">[[item.satellite_id]]</span></div>
-                      <div>Visibility: <b>[[item.clear_percent]]%</b></div>
-                      <div>
-                        <paper-button data-name$="[[toName(item, showSatellites, showImages)]]" data-url$="[[item.tile_url]]" raised="" on-tap="loadTiles_" disabled="[[eq_(item.tile_url, tileUrl_)]]">Load</paper-button>
+                      <div><b>[[toTime(item.acquired)]]</b> (<i>[[toDelta(item.acquired)]] ago</i>)</div>
+                      <div class="result-lower fullwidth">
+                        <div>
+                          <div hidden$="[[!showSatellites]]">Satellite: <span class="satellite-id">[[item.satellite_id]]</span></div>
+                          <div>Visibility: <b>[[item.clear_percent]]%</b></div>
+                        </div>
+                        <div>
+                          <paper-button data-name$="[[toName(item, showSatellites, showImages)]]" data-url$="[[item.tile_url]]" raised="" on-tap="loadTiles_" disabled="[[eq_(item.tile_url, tileUrl_)]]">Load</paper-button>
+                        </div>
                       </div>
                     </div>
                   </div>
