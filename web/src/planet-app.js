@@ -23,6 +23,7 @@ import 'leaflet/src/core';
 import 'leaflet/src/layer';
 import { Map } from 'leaflet/src/map';
 import { TileLayer } from 'leaflet/src/layer/tile';
+import { GeoJSON } from 'leaflet/src/layer';
 
 // Gesture events like tap and track generated from touch will not be
 // preventable, allowing for better scrolling performance.
@@ -203,7 +204,7 @@ class PlanetApp extends PolymerElement {
           padding-left: 10px;
         }
 
-        .satellite-id {
+        .id {
           font-weight: bold;
           font-family: monospace;
         }
@@ -244,7 +245,7 @@ class PlanetApp extends PolymerElement {
               <div class="share">
                 <b>Please Share with Care</b>
                 <div>
-                  This site is a hobby project. Excessive usage leads to high server costs which will lead to lockdowns.
+                  This site is a hobby project. Excessive usage leads to server costs which will lead to lockdown.
                   All data presented is owned by <a href="https://www.planet.com/terms-of-use/" target="_blank">&copy; Planet Labs</a>.
                   Please report any issues on <a href="https://github.com/jheidel/planet-server/issues" target="_blank">GitHub</a>.
                 </div>
@@ -299,7 +300,10 @@ class PlanetApp extends PolymerElement {
                       <div><b>[[toTime(item.acquired)]]</b> (<i>[[toDelta(item.acquired)]] ago</i>)</div>
                       <div class="result-lower fullwidth">
                         <div>
-                          <div hidden$="[[!showSatellites]]">Satellite: <span class="satellite-id">[[item.satellite_id]]</span></div>
+                          <div hidden$="[[!showSatellites]]" style$="border-width: 2px; border-style: solid; border-color: [[toColor(index)]]">
+                            <div hidden$="[[showImages]]">Satellite: <span class="id">[[item.satellite_id]]</span></div>
+                            <div hidden$="[[!showImages]]">ID: <span class="id">[[item.id]]</span></div>
+                          </div>
                           <div>Visibility: <b>[[item.clear_percent]]%</b></div>
                         </div>
                         <div>
@@ -409,6 +413,9 @@ class PlanetApp extends PolymerElement {
       planetLayer: {
         type: Object,
       },
+      geoLayer: {
+        type: Object,
+      },
 
       zoom: {
         type: Number,
@@ -504,7 +511,72 @@ class PlanetApp extends PolymerElement {
     if (e.detail.response && e.detail.response.results) {
       this.isError = false;
       this.search = e.detail.response.results;
+
+      this.drawGeo();
     }
+  }
+
+  toColor(i) {
+    switch(i) {
+      case 0:
+        return "red";
+      case 1:
+        return "orange";
+      case 2:
+        return "yellow";
+      case 3:
+        return "green";
+      case 4:
+        return "blue";
+      case 5:
+        return "purple";
+      case 6:
+        return "brown";
+      default:
+        return "gray";
+    }
+  }
+
+  drawGeo() {
+    this.map.removeLayer(this.geoLayer);
+
+    if (!this.showSatellites || !!this.tileUrl_) {
+      this.geoLayer = new GeoJSON();
+      this.geoLayer.addTo(this.map);
+      return;
+    }
+
+    const collection = {
+      "type": "FeatureCollection",
+      "features": [],
+    };
+
+    let i = 0;
+    for (let result of this.search) {
+      if (this.toColor(i) === "gray") {
+        break;
+      }
+      const f = {
+        "type": "Feature",
+        "properties": {
+          "index": i,
+        },
+        "geometry": result.geometry,
+      };
+      collection["features"].push(f);
+      i++;
+    }
+
+    this.geoLayer = new GeoJSON(collection, {
+      style: (feature) => {
+        return {
+          "color": this.toColor(feature.properties.index),
+          "opacity": 1.0,
+          "fillOpacity": 0.1,
+        };
+      },
+    });
+    this.geoLayer.addTo(this.map);
   }
 
   handleSearchError_(e) {
@@ -527,6 +599,7 @@ class PlanetApp extends PolymerElement {
     this.tileName_ = e.target.dataset.name;
     this.tileUrl_ = e.target.dataset.url;
     this.planetLayer.setUrl(this.tileUrl_);
+    this.drawGeo();
   }
 
   clearTiles_(e) {
@@ -534,6 +607,7 @@ class PlanetApp extends PolymerElement {
     this.tileUrl_ = '';
     if (this.planetLayer) {
       this.planetLayer.setUrl('');
+      this.drawGeo();
     }
   }
 
@@ -585,8 +659,10 @@ class PlanetApp extends PolymerElement {
   connectedCallback() {
     super.connectedCallback();
 
+    const startLoc = [47.5, -120];
+
     this.map = new Map(this.$.map, {
-      center: [47.5, -119],
+      center: startLoc,
       zoom: 7,
       inertiaDeceleration: 3000,
       inertiaMaxSpeed: 3000,
@@ -596,7 +672,7 @@ class PlanetApp extends PolymerElement {
     this.map.on('moveend', () => {
       this.newBounds_(this.map.getZoom(), this.map.getBounds());
     });
-    this.map.setView([47.5, -119], 7);
+    this.map.setView(startLoc, 7);
 
 
     const baseLayer = new TileLayer('https://tile.thunderforest.com/landscape/{z}/{x}/{y}.png?apikey=b99b298d147e4c8fafd7929f48e816cc', {
@@ -618,7 +694,12 @@ class PlanetApp extends PolymerElement {
       this.mapLoading_ = "";
     });
 
-    // TODO need viewport to issue ajax request....
+    this.geoLayer = new GeoJSON();
+    this.geoLayer.addTo(this.map);
+
+    setTimeout(() => {
+      this.map.invalidateSize({animate: true});
+    }, 250);
   }
 
   onOpacity_(v) {
@@ -629,7 +710,6 @@ class PlanetApp extends PolymerElement {
   }
 
   drawerToggle_() {
-    console.log("toggle");
     this.$.drawer.toggle();
     this.forceNarrow_ = !this.$.drawer.opened;
   }
