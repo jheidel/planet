@@ -178,7 +178,7 @@ func (s *MetaServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	region := maptile.At(orb.Point{req.Lng, req.Lat}, maptile.Zoom(req.Z)).Bound(SearchExpand)
 
 	end := time.Now()
-	start := end.Add(-7 * 24 * time.Hour)
+	start := end.Add(-30 * 24 * time.Hour)
 
 	t := time.Now()
 	resp, err := s.Client.QuickSearch(r.Context(), planet.RequestRegion(region, start, end))

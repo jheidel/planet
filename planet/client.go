@@ -109,6 +109,7 @@ func (p *Client) ServeKeySaveHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing key", http.StatusBadRequest)
 		return
 	}
+	// TODO would be a good idea to check that the key is valid first with a test API call.
 	log.Infof("Saving API key %q", key)
 	p.SaveAPIKey(context.Background(), key)
 }

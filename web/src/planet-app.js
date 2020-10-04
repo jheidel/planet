@@ -4,12 +4,14 @@ import '@polymer/app-layout/app-drawer/app-drawer.js';
 import '@polymer/app-layout/app-drawer-layout/app-drawer-layout.js';
 import '@polymer/app-layout/app-header/app-header.js';
 import '@polymer/app-layout/app-scroll-effects/app-scroll-effects.js';
+import '@google-web-components/google-apis/google-maps-api.js';
 import '@polymer/app-layout/app-toolbar/app-toolbar.js';
 import '@polymer/paper-icon-button/paper-icon-button.js';
 import '@polymer/paper-button/paper-button.js';
 import '@polymer/paper-input/paper-input.js';
 import '@polymer/paper-slider/paper-slider.js';
 import '@polymer/paper-spinner/paper-spinner.js';
+import '@polymer/paper-checkbox/paper-checkbox.js';
 import '@polymer/iron-ajax/iron-ajax.js';
 import '@polymer/iron-icon/iron-icon.js';
 import '@polymer/iron-icons/iron-icons.js';
@@ -66,6 +68,20 @@ class PlanetApp extends PolymerElement {
           z-index: 999;
           left: 7px;
           top: 80px;
+        }
+
+        #map-overlay-search {
+          position: absolute;
+          z-index: 999;
+          left: 70px;
+          width: 350px;
+          top: 12px;
+        }
+
+        .search-box {
+          padding-left: 10px;
+          padding-right: 10px;
+          margin-top: -5px;
         }
 
         #map-overlay-bottom {
@@ -180,6 +196,11 @@ class PlanetApp extends PolymerElement {
           padding: 10px;
           font-size: small;
         }
+
+        .search-options {
+          padding-left: 10px;
+        }
+
       </style>
 
       <iron-ajax id="search" handle-as="json" on-response="handleSearch_" on-error="handleSearchError_" url="/api/search" params="[[params_]]" auto="[[params_]]" debounce-duration="300" loading="{{loading_}}"></iron-ajax>
@@ -219,6 +240,17 @@ class PlanetApp extends PolymerElement {
                   <paper-slider min="0" max="100" value="[[opacity]]" immediate-value="{{opacity}}"></paper-slider>
                 </div>
               </div>
+
+
+              <div class="search-options">
+                <div>
+                  <paper-checkbox checked="{{showSatellites}}">Show Satellite Tracks</paper-checkbox>
+                </div>
+                <div>
+                  <paper-checkbox checked="{{showImages}}" disabled="[[!showSatellites]]">Show Individual Images</paper-checkbox>
+                </div>
+              </div>
+
             </div>
 
 
@@ -285,10 +317,6 @@ class PlanetApp extends PolymerElement {
                         <p>
                       </li>
                     </ol>
-                
-
-
-
                   </div>
                 </div>
               </div>
@@ -302,10 +330,18 @@ class PlanetApp extends PolymerElement {
         </div>
         <div id="map-overlay-bottom">
           <div class="map-loading white-overlay" hidden$="[[!mapLoading_]]">
-            Loading Map Tiles... 
+            Loading [[mapLoading_]]...
             <div>
             <paper-spinner active=""></paper-spinner>
             </div>
+          </div>
+        </div>
+        <div id="map-overlay-search">
+          <div class="search-box white-overlay">
+            <paper-input id="mapSearch" label="Search for Location or Feature" type="search" always-float-label="" on-change="mapSearchChange_">
+                <iron-icon icon="search" slot="prefix"></iron-icon>
+            </paper-input>
+            <google-maps-api id="googleMapsApi" api-key="AIzaSyCaY-yYtLoxZZq0nRizTG0C2OGum5bGhzw" version="3.exp"></google-maps-api>
           </div>
         </div>
         <div id="map">
@@ -360,6 +396,15 @@ class PlanetApp extends PolymerElement {
         value: false,
       },
       mapLoading_: {
+        type: String,
+        value: "",
+      },
+
+      showSatellites: {
+        type: Boolean,
+        value: false,
+      },
+      showImages: {
         type: Boolean,
         value: false,
       },
@@ -379,18 +424,33 @@ class PlanetApp extends PolymerElement {
     };
   }
 
+  static get observers() {
+    return [
+      'refreshParams(showSatellites, showImages)',
+    ];
+  }
+
   toName(r) {
     return this.toDate(r.acquired);
   }
 
   toDate(ts) {
+    if (!ts) {
+      return "";
+    }
     const m = moment(ts);
     return m.format("dddd") + ", " + m.format("LL");
   }
   toTime(ts) {
+    if (!ts) {
+      return "";
+    }
     return moment(ts).format("LT");
   }
   toDelta(ts) {
+    if (!ts) {
+      return "";
+    }
     const now = moment();
     const m = moment(ts);
     return moment.duration(now.diff(m)).humanize();
@@ -412,6 +472,9 @@ class PlanetApp extends PolymerElement {
     this.search = [];
 
     const resp = e.detail.request.xhr.response;
+    if (!resp) {
+      return;
+    }
 
     this.errorMessage = resp.error;
     const keyRe = /\bkey\b/g;
@@ -450,14 +513,19 @@ class PlanetApp extends PolymerElement {
   newBounds_(zoom, bounds) {
     this.zoom = zoom;
     this.bounds = bounds;
+    this.refreshParams();
+  }
 
+  refreshParams() {
+    if (!this.bounds) {
+      return;
+    }
     const center = this.bounds.getCenter();
-
     this.params_ = {
       'lat': center.lat,
       'lng': center.lng,
       'z': this.zoom,
-      'group_by': 'date',
+      'group_by': (this.showImages && this.showSatellites ? '' : (this.showSatellites ? 'satellite' : 'date')),
     };
   }
 
@@ -490,11 +558,11 @@ class PlanetApp extends PolymerElement {
 
     this.planetLayer.on('loading', () => {
       if (this.tileUrl_) {
-        this.mapLoading_ = true;
+        this.mapLoading_ = "Map Tiles";
       }
     });
     this.planetLayer.on('load', () => {
-      this.mapLoading_ = false;
+      this.mapLoading_ = "";
     });
 
     // TODO need viewport to issue ajax request....
@@ -526,6 +594,50 @@ class PlanetApp extends PolymerElement {
       this.$.apiKey.value = "";
       this.$.apiKeySpinner.active = false;
     }, 1000);
+  }
+
+  mapSearchChange_(e) {
+    const value = e.target.value;
+    e.target.blur();
+
+    if (!value) {
+      return;
+    }
+
+    const api = this.$.googleMapsApi.api;
+
+    const el = document.createElement('div');
+    var service = new api.places.PlacesService(el);
+
+    const center = this.bounds.getCenter();
+    const request = {
+      "fields": ["geometry.location"],
+      "query": value,
+      "locationBias": {
+        "lat": center.lat,
+        "lng": center.lng,
+      },
+    };
+
+    this.mapLoading_ = "Map Search";
+    try {
+      service.findPlaceFromQuery(request, (results, status) => {
+        this.mapLoading_ = "";
+        if (status !== "OK") {
+          alert('Place search returned status: ' + status);
+          return;
+        }
+        if (!results.length) {
+          alert('No results found for search');
+          return;
+        }
+        const ll = results[0].geometry.location;
+        this.map.setView([ll.lat(), ll.lng()], 14);
+      });
+    } catch (err) {
+      this.mapLoading_ = "";
+      alert('Place search failed: ' + err);
+    }
   }
 }
 

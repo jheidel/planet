@@ -504,6 +504,14 @@
     enabled "2.0.x"
     kuler "^2.0.0"
 
+"@google-web-components/google-apis@^3.0.1":
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/@google-web-components/google-apis/-/google-apis-3.0.1.tgz#2630a03728b5113726fb3a82ebb30532e9fa0b5a"
+  integrity sha512-mOY53UgHz0bQKLRhunMgC+2skTHniq7UWlQ3rs3x9tcZDbTuxe5d9tZA1wt/j4vXViBHa//G+b3Syx8XOoqAwg==
+  dependencies:
+    "@polymer/iron-jsonp-library" "^3.0.0-pre.19"
+    "@polymer/polymer" "^3.0.0"
+
 "@mrmlnc/readdir-enhanced@^2.2.1":
   version "2.2.1"
   resolved "https://registry.yarnpkg.com/@mrmlnc/readdir-enhanced/-/readdir-enhanced-2.2.1.tgz#524af240d1a360527b730475ecfa1344aa540dde"
@@ -739,6 +747,13 @@
     "@polymer/iron-validatable-behavior" "^3.0.0-pre.26"
     "@polymer/polymer" "^3.0.0"
 
+"@polymer/iron-jsonp-library@^3.0.0-pre.19":
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/@polymer/iron-jsonp-library/-/iron-jsonp-library-3.0.1.tgz#559d997e53a623260f49148aa144ae39c1e1a5fa"
+  integrity sha512-JpIommURLt9DCqcaJaxsUiDWEaVWV2zoq12oJAMO65Do9Sl9TAv556bI7I4mLJcE40otPZ4wYap4kFViORMiKA==
+  dependencies:
+    "@polymer/polymer" "^3.0.0"
+
 "@polymer/iron-media-query@^3.0.0-pre.15", "@polymer/iron-media-query@^3.0.0-pre.26":
   version "3.0.1"
   resolved "https://registry.yarnpkg.com/@polymer/iron-media-query/-/iron-media-query-3.0.1.tgz#5cd8a1c1e8c9b8bafd3dd5da14e0f8d2cfa76d83"
@@ -799,6 +814,18 @@
   dependencies:
     "@polymer/iron-flex-layout" "^3.0.0-pre.26"
     "@polymer/paper-behaviors" "^3.0.0-pre.27"
+    "@polymer/paper-styles" "^3.0.0-pre.26"
+    "@polymer/polymer" "^3.0.0"
+
+"@polymer/paper-checkbox@^3.1.0":
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/@polymer/paper-checkbox/-/paper-checkbox-3.1.0.tgz#66b903ae5814db237d027deb4a3f3430f48d905b"
+  integrity sha512-kXm6yDG1tT8if0XuJ2cc9NF+g8Ev4wG+rnf0a+Sx+O7J6fn1jcnBlYn72FlrfjVjDQZDBFmT6nynhD5PvFw8iQ==
+  dependencies:
+    "@polymer/iron-a11y-keys-behavior" "^3.0.0-pre.26"
+    "@polymer/iron-checked-element-behavior" "^3.0.0-pre.26"
+    "@polymer/paper-behaviors" "^3.0.0-pre.27"
+    "@polymer/paper-ripple" "^3.0.0-pre.26"
     "@polymer/paper-styles" "^3.0.0-pre.26"
     "@polymer/polymer" "^3.0.0"
 

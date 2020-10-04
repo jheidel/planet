@@ -10,6 +10,7 @@
     "lint": "polymer lint"
   },
   "dependencies": {
+    "@google-web-components/google-apis": "^3.0.1",
     "@polymer/app-layout": "^3.0.0-pre.15",
     "@polymer/iron-ajax": "^3.0.1",
     "@polymer/iron-flex-layout": "^3.0.0-pre.15",
@@ -18,6 +19,7 @@
     "@polymer/iron-iconset-svg": "^3.0.0-pre.15",
     "@polymer/iron-media-query": "^3.0.0-pre.15",
     "@polymer/paper-button": "^3.0.1",
+    "@polymer/paper-checkbox": "^3.1.0",
     "@polymer/paper-icon-button": "^3.0.0-pre.15",
     "@polymer/paper-input": "^3.2.1",
     "@polymer/paper-slider": "^3.0.1",
