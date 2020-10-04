@@ -16,7 +16,7 @@ import '@polymer/iron-ajax/iron-ajax.js';
 import '@polymer/iron-icon/iron-icon.js';
 import '@polymer/iron-icons/iron-icons.js';
 import './pl-icons.js';
-import moment from 'moment/src/moment.js';
+import moment from 'moment/src/moment';
 
 import 'leaflet/src/control';
 import 'leaflet/src/core';
@@ -488,13 +488,13 @@ class PlanetApp extends PolymerElement {
       return "";
     }
     const m = moment(ts);
-    return m.format("dddd") + ", " + m.format("LL");
+    return m.format("dddd") + ", " + m.format("MMMM D, YYYY");
   }
   toTime(ts) {
     if (!ts) {
       return "";
     }
-    return moment(ts).format("LT");
+    return moment(ts).format("h:mm A");
   }
   toDelta(ts) {
     if (!ts) {

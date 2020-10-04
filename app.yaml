@@ -34,7 +34,5 @@ handlers:
   secure: always
 
 automatic_scaling:
-  min_idle_instances: 0
-  max_idle_instances: 3
-  min_instances: 0
+  min_instances: 1
   max_instances: 3
