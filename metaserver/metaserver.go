@@ -17,6 +17,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const (
+	SearchBoundExpand = 1
+)
+
 type MetaServer struct {
 	Client *planet.Client
 }
@@ -171,7 +175,7 @@ func (s *MetaServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	log.Debugf("Search request: %+v", spew.Sdump(req))
 
-	region := maptile.At(orb.Point{req.Lng, req.Lat}, maptile.Zoom(req.Z)).Bound()
+	region := maptile.At(orb.Point{req.Lng, req.Lat}, maptile.Zoom(req.Z)).Bound(SearchBoundExpand)
 
 	end := time.Now()
 	start := end.Add(-30 * 24 * time.Hour)
