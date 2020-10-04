@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"planet-server/planet"
-	"planet-server/tileserver"
 	"planet-server/util"
 	"strconv"
 	"time"
@@ -206,29 +205,30 @@ func (s *MetaServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for _, f := range features {
 		url := "/api/tile/{z}/{x}/{y}.png"
 
-		ptile := tile
-		for i := 0; i < 2; i++ {
-			if ptile.Z <= tileserver.MinZ {
-				break
-			}
-			ptile = ptile.Parent()
-		}
-		thumb := fmt.Sprintf("/api/tile/%d/%d/%d.png", ptile.Z, ptile.X, ptile.Y)
+		// TODO: would be nice to use the tile server for the mosaic thumbnail
+		// previews, but it's pretty slow, Unfortunately it requires a ton of API
+		// requests in order to generate these, and we run into concurrency
+		// bottlenecks.
+
+		//ptile := tile
+		//for i := 0; i < 2; i++ {
+		//	if ptile.Z <= tileserver.MinZ {
+		//		break
+		//	}
+		//	ptile = ptile.Parent()
+		//}
+		//thumb := fmt.Sprintf("/api/tile/%d/%d/%d.png", ptile.Z, ptile.X, ptile.Y)
+
 		switch req.GroupBy {
 		case "date":
-			query := "?date=" + dateOfFeature(f)
-			url += query
-			thumb += query
+			url += "?date=" + dateOfFeature(f)
 		case "satellite":
-			query := "?satellite_id=" + f.Properties.SatelliteID + "&ts=" + fmt.Sprintf("%d", f.Properties.Acquired.Unix())
-			url += query
-			thumb = fmt.Sprintf("/api/thumb/%s.png", f.ID)
+			url += "?satellite_id=" + f.Properties.SatelliteID + "&ts=" + fmt.Sprintf("%d", f.Properties.Acquired.Unix())
 		default:
 			url += "?id=" + f.ID
-			thumb = fmt.Sprintf("/api/thumb/%s.png", f.ID)
 		}
 		mr.Results = append(mr.Results, &metaEntry{
-			Thumb:          thumb,
+			Thumb:          fmt.Sprintf("/api/thumb/%s.png", f.ID),
 			Acquired:       f.Properties.Acquired,
 			VisiblePercent: f.Properties.VisiblePercent,
 			ClearPercent:   f.Properties.ClearPercent,
