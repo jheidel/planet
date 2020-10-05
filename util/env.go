@@ -2,6 +2,7 @@ package util
 
 import (
 	"os"
+	"strconv"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -12,6 +13,18 @@ func EnvOrDefault(key string, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+func EnvOrDefaultInt(key string, fallback int) int {
+	v, ok := os.LookupEnv(key)
+	if !ok {
+		return fallback
+	}
+	i, err := strconv.Atoi(v)
+	if err != nil {
+		return fallback
+	}
+	return i
 }
 
 func LocationOrDie() *time.Location {

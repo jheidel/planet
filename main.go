@@ -12,6 +12,7 @@ import (
 	"planet-server/planet"
 	"planet-server/thumbserver"
 	"planet-server/tileserver"
+	"planet-server/util"
 	"syscall"
 
 	"github.com/gorilla/mux"
@@ -20,7 +21,7 @@ import (
 )
 
 var (
-	port  = flag.Int("port", 8080, "Serving port")
+	port  = flag.Int("port", util.EnvOrDefaultInt("PORT", 8080), "Serving port")
 	debug = flag.Bool("debug", false, "Enable debug logging verbosity")
 )
 
