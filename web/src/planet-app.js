@@ -548,7 +548,7 @@ class PlanetApp extends PolymerElement {
   drawGeo() {
     this.map.removeLayer(this.geoLayer);
 
-    if (!this.showSatellites || !!this.tileUrl_) {
+    if (!this.showSatellites || !!this.tileUrl_ || !this.search) {
       this.geoLayer = new GeoJSON();
       this.geoLayer.addTo(this.map);
       return;
@@ -601,6 +601,8 @@ class PlanetApp extends PolymerElement {
     this.errorMessage = resp.error;
     const keyRe = /\bkey\b/g;
     this.isApiKeyError = !!resp.error.match(keyRe);
+
+    this.drawGeo();
   }
 
   loadTiles_(e) {
@@ -668,8 +670,8 @@ class PlanetApp extends PolymerElement {
     this.set('queryParams', qp);
   }
 
-  optionsChanged() {
-    this.clearTiles_();
+  optionsChanged(e) {
+    this.clearTiles_(e);
     this.refreshParams();
 
     if (!this.showSatellites && this.showImages) {
