@@ -13,7 +13,9 @@ import (
 	"planet-server/thumbserver"
 	"planet-server/tileserver"
 	"planet-server/util"
+	"strconv"
 	"syscall"
+	"time"
 
 	"github.com/gorilla/mux"
 
@@ -23,6 +25,10 @@ import (
 var (
 	port  = flag.Int("port", util.EnvOrDefaultInt("PORT", 8080), "Serving port")
 	debug = flag.Bool("debug", false, "Enable debug logging verbosity")
+
+	// Timestamp that can be set with ldflags for versioning.
+	// Expected to be empty, or unix seconds.
+	BuildTimestamp string
 )
 
 func topLevelContext() context.Context {
@@ -57,6 +63,16 @@ func main() {
 	router.Handle("/api/thumb/{id:[A-Za-z0-9_-]+}.png", ths).Methods("GET")
 	router.Handle("/api/search", ms).Methods("GET")
 	router.HandleFunc("/api/key", pl.ServeKeySaveHandler).Methods("POST")
+
+	router.HandleFunc("/api/build", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		ts, err := strconv.Atoi(BuildTimestamp)
+		if err != nil {
+			log.Fatalf("build timestamp %v not an integer", BuildTimestamp)
+		}
+		t := time.Unix(int64(ts), 0)
+		fmt.Fprintf(w, "%s", t.Format("Jan 2, 2006 3:04 PM"))
+	})
 
 	router.PathPrefix("/debug/pprof/").Handler(http.DefaultServeMux)
 
