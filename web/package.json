@@ -12,6 +12,7 @@
   "dependencies": {
     "@google-web-components/google-apis": "^3.0.1",
     "@polymer/app-layout": "^3.0.0-pre.15",
+    "@polymer/app-route": "^3.0.2",
     "@polymer/iron-ajax": "^3.0.1",
     "@polymer/iron-flex-layout": "^3.0.0-pre.15",
     "@polymer/iron-icon": "^3.0.1",

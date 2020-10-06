@@ -14,6 +14,7 @@ import '@polymer/paper-spinner/paper-spinner.js';
 import '@polymer/paper-checkbox/paper-checkbox.js';
 import '@polymer/iron-ajax/iron-ajax.js';
 import '@polymer/iron-icon/iron-icon.js';
+import '@polymer/app-route/app-location.js';
 import '@polymer/iron-icons/iron-icons.js';
 import './pl-icons.js';
 import moment from 'moment/src/moment';
@@ -232,6 +233,8 @@ class PlanetApp extends PolymerElement {
 
       </style>
 
+      <app-location query-params="{{queryParams}}"></app-location>
+
       <iron-ajax id="search" handle-as="json" on-response="handleSearch_" on-error="handleSearchError_" url="/api/search" params="[[params_]]" auto="[[params_]]" debounce-duration="300" loading="{{loading_}}"></iron-ajax>
       <iron-ajax id="apiKeyUpdate" url="/api/key" method="POST" handle-as="text" content-type="application/x-www-form-urlencoded"></iron-ajax>
 
@@ -396,6 +399,10 @@ class PlanetApp extends PolymerElement {
         type: Number,
         value: 100,
         observer: 'onOpacity_',
+      },
+
+      queryParams: {
+        type: Object,
       },
 
       map: {
@@ -597,15 +604,31 @@ class PlanetApp extends PolymerElement {
   }
 
   loadTiles_(e) {
-    this.tileName_ = e.target.dataset.name;
-    this.tileUrl_ = e.target.dataset.url;
+    if (e) {
+      this.tileName_ = e.target.dataset.name;
+      this.tileUrl_ = e.target.dataset.url;
+
+      const qp = {};
+      Object.assign(qp, this.queryParams);
+      const tile = [this.tileName_, this.tileUrl_];
+      qp["layer"] = window.btoa(JSON.stringify(tile));
+      this.set('queryParams', qp);
+    }
     this.planetLayer.setUrl(this.tileUrl_);
     this.drawGeo();
   }
 
   clearTiles_(e) {
-    this.tileName_ = '';
-    this.tileUrl_ = '';
+    if (e) {
+      this.tileName_ = '';
+      this.tileUrl_ = '';
+
+      const qp = {};
+      Object.assign(qp, this.queryParams);
+      delete qp["layer"];
+      this.set('queryParams', qp);
+    }
+
     if (this.planetLayer) {
       this.planetLayer.setUrl('');
       this.drawGeo();
@@ -633,6 +656,16 @@ class PlanetApp extends PolymerElement {
     this.zoom = zoom;
     this.bounds = bounds;
     this.refreshParams();
+
+    const center = this.bounds.getCenter();
+
+    // Update query parameters
+    const qp = {};
+    Object.assign(qp, this.queryParams);
+    qp["lat"] = center.lat.toFixed(4);
+    qp["lng"] = center.lng.toFixed(4);
+    qp["z"] = zoom;
+    this.set('queryParams', qp);
   }
 
   optionsChanged() {
@@ -660,20 +693,45 @@ class PlanetApp extends PolymerElement {
   connectedCallback() {
     super.connectedCallback();
 
-    const startLoc = [47.5, -120];
+    let startLoc = [47.5, -120];
+    let startZ = 7;
+
+    if (this.queryParams) {
+      try {
+        const lat = parseFloat(this.queryParams["lat"]);
+        const lng = parseFloat(this.queryParams["lng"]);
+        if (lat && lng) {
+          startLoc = [lat, lng];
+        }
+        const z = parseInt(this.queryParams["z"]);
+        if (z) {
+          startZ = z;
+        }
+        if (this.queryParams["layer"]) {
+            const tile = JSON.parse(window.atob(this.queryParams["layer"]));
+            const name = tile[0];
+            const url = tile[1];
+            this.tileName_ = name;
+            this.tileUrl_ = url;
+        }
+      } catch(err) {
+        console.log("Bad url parameters: " + err);
+      }
+    }
 
     this.map = new Map(this.$.map, {
       center: startLoc,
-      zoom: 7,
+      zoom: startZ,
       inertiaDeceleration: 3000,
       inertiaMaxSpeed: 3000,
       tapTolerance: 40,
       tap: false
     });
+
     this.map.on('moveend', () => {
       this.newBounds_(this.map.getZoom(), this.map.getBounds());
     });
-    this.map.setView(startLoc, 7);
+    this.map.setView(startLoc, startZ);
 
 
     const baseLayer = new TileLayer('https://tile.thunderforest.com/landscape/{z}/{x}/{y}.png?apikey=b99b298d147e4c8fafd7929f48e816cc', {
@@ -698,10 +756,14 @@ class PlanetApp extends PolymerElement {
     this.geoLayer = new GeoJSON();
     this.geoLayer.addTo(this.map);
 
+    if (this.tileUrl_) {
+      this.loadTiles_();
+    }
+
     setTimeout(() => {
       this.map.invalidateSize({animate: true});
       this.$.mapSearch.focus();
-    }, 250);
+    }, 500);
   }
 
   onOpacity_(v) {

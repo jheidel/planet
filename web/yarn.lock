@@ -640,6 +640,14 @@
     "@polymer/iron-scroll-target-behavior" "^3.0.0-pre.26"
     "@polymer/polymer" "^3.0.0"
 
+"@polymer/app-route@^3.0.2":
+  version "3.0.2"
+  resolved "https://registry.yarnpkg.com/@polymer/app-route/-/app-route-3.0.2.tgz#749096fb610fb15d27c7b68446406f30786cf93d"
+  integrity sha512-8Y34evmsaYh7ONr+zLwLzXaU0iOZZQj1E2uB3iaToQHbOP1POhKlnmAycBQ/eFB8BwrdSUBaDQk+rZhio78FQw==
+  dependencies:
+    "@polymer/iron-location" "^3.0.0-pre.26"
+    "@polymer/polymer" "^3.0.0"
+
 "@polymer/esm-amd-loader@^1.0.0":
   version "1.0.4"
   resolved "https://registry.yarnpkg.com/@polymer/esm-amd-loader/-/esm-amd-loader-1.0.4.tgz#4e77f2f59b29b01e0ad02aa83d33716cddc5f9f9"
@@ -751,6 +759,13 @@
   version "3.0.1"
   resolved "https://registry.yarnpkg.com/@polymer/iron-jsonp-library/-/iron-jsonp-library-3.0.1.tgz#559d997e53a623260f49148aa144ae39c1e1a5fa"
   integrity sha512-JpIommURLt9DCqcaJaxsUiDWEaVWV2zoq12oJAMO65Do9Sl9TAv556bI7I4mLJcE40otPZ4wYap4kFViORMiKA==
+  dependencies:
+    "@polymer/polymer" "^3.0.0"
+
+"@polymer/iron-location@^3.0.0-pre.26":
+  version "3.0.2"
+  resolved "https://registry.yarnpkg.com/@polymer/iron-location/-/iron-location-3.0.2.tgz#7ca2df089c57deb8a6f54f5cc3722af0ff871441"
+  integrity sha512-75XlPsrm6RQUPNzWWaA0TnTQaWZUYX8UB4Q6WCjikKWzmaSCCxlBrVVYf8WRqtCxw/PeCvLn5kGL6qhTlNTCEA==
   dependencies:
     "@polymer/polymer" "^3.0.0"
 
