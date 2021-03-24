@@ -8,7 +8,8 @@ web/build:
 	cd web && $(MAKE)
 
 build:
-	go get -d -v
+	go mod download
+	go get -d -v  # Attempt to upgrade
 	go build -ldflags "-X main.BuildTimestamp=$(ts)"
 
 clean:
