@@ -1,6 +1,6 @@
 ## Planet Data Viewer
 
-[![Build Status](https://travis-ci.com/jheidel/planet-server.svg?branch=master)](https://travis-ci.com/jheidel/planet-server)
+[![Build Status](https://app.travis-ci.com/jheidel/planet-server.svg?branch=master)](https://app.travis-ci.com/jheidel/planet-server)
 
 This project is a map tile server which wraps the [Planet Developer API](https://developers.planet.com/).
 It implements on-demand mosaics and drill-down.

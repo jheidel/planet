@@ -10,7 +10,7 @@ web/build:
 build:
 	go mod download
 	go get -d -v  # Attempt to upgrade
-	go build -ldflags "-X main.BuildTimestamp=$(ts)"
+	go build -ldflags "-X main.BuildTimestamp=$(ts)" -buildvcs=false
 
 clean:
 	cd web && $(MAKE) clean
